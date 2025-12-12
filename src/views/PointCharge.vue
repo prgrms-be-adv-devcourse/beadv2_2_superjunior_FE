@@ -90,8 +90,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import api from '@/api/axios'
 // import { useRouter } from 'vue-router'
-// import api from '../api/client'
 
 // const router = useRouter()
 
@@ -176,15 +176,16 @@ const requestCharge = async () => {
 
   try {
     // 1. 서버에 충전 요청 생성 (orderId와 함께)
-    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const orderId = crypto.randomUUID()
     const orderName = `포인트 ${selectedAmount.value.toLocaleString()}원 충전`
 
-    // TODO: 백엔드 API 호출하여 주문 정보 저장
-    // const response = await api.post('/points/charge/request', {
-    //   amount: selectedAmount.value,
-    //   orderId: orderId,
-    //   orderName: orderName
-    // })
+    // 백엔드 API 호출하여 주문 정보 저장
+    const response = await api.post('/api/points/create', {
+      orderId: orderId,
+      amount: selectedAmount.value
+    })
+
+    console.log('충전 요청 생성 성공:', response.data)
 
     // 2. 토스페이먼트 결제 요청 (카드 결제만 사용)
     await tossPayments.requestPayment('카드', {
@@ -200,6 +201,8 @@ const requestCharge = async () => {
     console.error('결제 요청 실패:', error)
     if (error.code === 'USER_CANCEL') {
       alert('결제가 취소되었습니다.')
+    } else if (error.response) {
+      alert(`결제 요청 실패: ${error.response.data?.message || '서버 오류가 발생했습니다.'}`)
     } else {
       alert('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
