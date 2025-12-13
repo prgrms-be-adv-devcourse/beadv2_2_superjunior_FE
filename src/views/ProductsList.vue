@@ -92,6 +92,7 @@
             v-for="product in filteredProducts"
             :key="product.id"
             class="product-card"
+            @click="goToDetail(product.id)"
           >
             <div class="image-wrapper">
               <img :src="product.image" :alt="product.title" loading="lazy" />
@@ -104,7 +105,7 @@
                 type="button"
                 class="bookmark"
                 :class="{ active: wishlist.has(product.id) }"
-                @click="toggleWishlist(product.id)"
+                @click.stop="toggleWishlist(product.id)"
               >
                 {{ wishlist.has(product.id) ? '★' : '☆' }}
               </button>
@@ -121,9 +122,6 @@
                     <span class="original">₩{{ product.originalPrice.toLocaleString() }}</span>
                   </p>
                 </div>
-                <button class="btn btn-outline" @click="goToDetail(product.id)">
-                  상세보기
-                </button>
               </div>
               <div class="progress">
                 <div class="progress-head">
@@ -139,7 +137,7 @@
               </div>
               <div class="card-footer">
                 <span class="time">⏰ {{ product.timeLeft }}</span>
-                <button class="btn btn-primary" @click="addToCart(product)">
+                <button class="btn btn-primary" @click.stop="addToCart(product)">
                   장바구니 담기
                 </button>
               </div>
@@ -392,7 +390,7 @@ const toggleWishlist = (productId) => {
 }
 
 const goToDetail = (productId) => {
-  router.push({ name: 'product-detail', params: { id: productId } })
+  router.push({ name: 'group-purchase-detail', params: { id: productId } })
 }
 
 const addToCart = (product) => {
@@ -585,6 +583,14 @@ watch(() => route.query.section, (section) => {
   display: flex;
   flex-direction: column;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  border-color: #3a3a3a;
 }
 
 .image-wrapper {
@@ -659,7 +665,7 @@ watch(() => route.query.section, (section) => {
 
 .price-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 12px;
 }

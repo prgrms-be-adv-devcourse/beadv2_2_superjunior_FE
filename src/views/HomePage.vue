@@ -424,7 +424,7 @@ const filterByCategory = (categoryId) => {
 }
 
 const goToProduct = (productId) => {
-  router.push({ name: 'product-detail', params: { id: productId } })
+  router.push({ name: 'group-purchase-detail', params: { id: productId } })
 }
 
 // 페이지 로드 시 데이터 가져오기
