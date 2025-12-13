@@ -41,15 +41,15 @@
     <section class="section categories-section">
       <div class="container">
         <h2 class="section-title">카테고리</h2>
-        <div class="categories-grid">
-          <div 
-            v-for="category in categories" 
-            :key="category.id" 
+        <div ref="categoriesEl" class="categories-scroll">
+          <div
+            v-for="category in categories"
+            :key="category.id"
             class="category-card"
-            @click="filterByCategory(category.id)"
+            @click="filterByCategory(category.value)"
           >
             <div class="category-icon">{{ category.icon }}</div>
-            <div class="category-name">{{ category.name }}</div>
+            <div class="category-name">{{ category.label }}</div>
           </div>
         </div>
       </div>
@@ -141,9 +141,14 @@
                   <span class="progress-target">목표: {{ product.targetCount }}명</span>
                 </div>
                 <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
-                    :style="{ width: `${(product.currentCount / product.targetCount) * 100}%` }"
+                  <div
+                    class="progress-fill"
+                    :style="{
+                      width: `${Math.min(
+                        (product.currentCount / product.targetCount) * 100,
+                        100
+                      )}%`
+                    }"
                   ></div>
                 </div>
               </div>
@@ -239,85 +244,141 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import NoImages from '@/data/NoImages.png'
 
 const router = useRouter()
 
 const keyword = ref('')
 const categories = [
-  { id: 1, name: '전자제품', icon: '📱' },
-  { id: 2, name: '패션', icon: '👕' },
-  { id: 3, name: '식품', icon: '🍎' },
-  { id: 4, name: '뷰티', icon: '💄' },
-  { id: 5, name: '홈/리빙', icon: '🏠' },
-  { id: 6, name: '스포츠', icon: '⚽' },
-  { id: 7, name: '도서', icon: '📚' },
-  { id: 8, name: '기타', icon: '📦' }
+  { id: 1, value: 'ALL', label: '전체', icon: '✨' },
+  { id: 2, value: 'HOME', label: '생활 · 주방', icon: '🏠' },
+  { id: 3, value: 'FOOD', label: '식품 · 간식', icon: '🍎' },
+  { id: 4, value: 'HEALTH', label: '건강 · 헬스', icon: '💊' },
+  { id: 5, value: 'BEAUTY', label: '뷰티', icon: '💄' },
+  { id: 6, value: 'FASHION', label: '패션 · 의류', icon: '👟' },
+  { id: 7, value: 'ELECTRONICS', label: '전자 · 디지털', icon: '📱' },
+  { id: 8, value: 'KIDS', label: '유아 · 어린이', icon: '🧸' },
+  { id: 9, value: 'HOBBY', label: '취미', icon: '🎮' },
+  { id: 10, value: 'PET', label: '반려동물', icon: '🐶' }
 ]
+//카테고리 드래그 스크롤
+const categoriesEl = ref(null)
 
-const popularProducts = ref([
-        {
-          id: 1,
-          title: '아이폰 15 Pro Max 256GB',
-          category: '전자제품',
-          seller: '테크샵',
-          image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
-          originalPrice: 1590000,
-          currentPrice: 1190000,
-          discountRate: 25,
-          currentCount: 45,
-          targetCount: 50,
-          timeLeft: '2일 5시간 남음',
-          hot: true,
-          urgent: false
-        },
-        {
-          id: 2,
-          title: '나이키 에어맥스 운동화',
-          category: '패션',
-          seller: '스포츠월드',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-          originalPrice: 149000,
-          currentPrice: 99000,
-          discountRate: 34,
-          currentCount: 78,
-          targetCount: 100,
-          timeLeft: '5일 남음',
-          hot: true,
-          urgent: false
-        },
-        {
-          id: 3,
-          title: '프리미엄 한우 세트 (1kg)',
-          category: '식품',
-          seller: '프리미엄푸드',
-          image: 'https://images.unsplash.com/photo-1603048297172-c92544798d5a?w=400',
-          originalPrice: 89000,
-          currentPrice: 59000,
-          discountRate: 34,
-          currentCount: 32,
-          targetCount: 40,
-          timeLeft: '1일 12시간 남음',
-          hot: true,
-          urgent: true
-        },
-        {
-          id: 4,
-          title: '디올 립스틱 세트',
-          category: '뷰티',
-          seller: '뷰티플러스',
-          image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400',
-          originalPrice: 89000,
-          currentPrice: 59000,
-          discountRate: 34,
-          currentCount: 56,
-          targetCount: 60,
-          timeLeft: '3일 남음',
-          hot: true,
-          urgent: false
-        }
-      ])
+let isDown = false
+let startX = 0
+let scrollLeft = 0
+
+const onMouseDown = (e) => {
+  if (!categoriesEl.value) return
+  isDown = true
+  categoriesEl.value.classList.add('dragging')
+  startX = e.pageX - categoriesEl.value.offsetLeft
+  scrollLeft = categoriesEl.value.scrollLeft
+}
+
+const onMouseLeave = () => {
+  isDown = false
+  categoriesEl.value?.classList.remove('dragging')
+}
+
+const onMouseUp = () => {
+  isDown = false
+  categoriesEl.value?.classList.remove('dragging')
+}
+
+const onMouseMove = (e) => {
+  if (!isDown || !categoriesEl.value) return
+  e.preventDefault()
+  const x = e.pageX - categoriesEl.value.offsetLeft
+  const walk = (x - startX) * 1.5 // 드래그 속도
+  categoriesEl.value.scrollLeft = scrollLeft - walk
+}
+
+onMounted(() => {
+  const el = categoriesEl.value
+  if (!el) return
+
+  el.addEventListener('mousedown', onMouseDown)
+  el.addEventListener('mouseleave', onMouseLeave)
+  window.addEventListener('mouseup', onMouseUp)
+  el.addEventListener('mousemove', onMouseMove)
+})
+
+onBeforeUnmount(() => {
+  const el = categoriesEl.value
+  if (!el) return
+
+  el.removeEventListener('mousedown', onMouseDown)
+  el.removeEventListener('mouseleave', onMouseLeave)
+  window.removeEventListener('mouseup', onMouseUp)
+  el.removeEventListener('mousemove', onMouseMove)
+})
+
+const popularProducts = ref([])
+
+
+//남은 날짜 계산
+const calcTimeLeft = (endDate) => {
+  if (!endDate) return ''
+
+  const end = new Date(endDate)
+  const now = new Date()
+  const diffMs = end - now
+
+  if (diffMs <= 0) return '마감'
+
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+
+  return days > 0
+    ? `${days}일 ${hours}시간 남음`
+    : `${hours}시간 남음`
+}
+
+const isUrgent = (endDate) => {
+  if (!endDate) return false
+  return (new Date(endDate) - new Date()) / (1000 * 60 * 60) <= 24
+}
+
+//진행 중인 공동구매 중 참여 수량이 제일 많은 3개 불러오기
+const fetchPopularProducts = async () => {
+  const response = await axios.get('/api/searches/purchase/search', {
+    params: {
+      status: 'OPEN',
+      sort: 'currentQuantity,desc',
+      page: 0,
+      size: 3
+    }
+  })
+
+  return response.data.data.content
+}
+
+//형식 맞추기
+const mapToPopularCard = (doc) => {
+  const originalPrice = doc.productDocumentEmbedded?.price ?? 0
+  const discountedPrice = doc.discountedPrice ?? originalPrice
+
+  return {
+    id: doc.groupPurchaseId,
+    title: doc.title,
+    category: doc.productDocumentEmbedded?.category ?? '',
+    seller: doc.sellerName,
+    image: doc.productDocumentEmbedded?.imageUrl || NoImages,
+    originalPrice,
+    currentPrice: discountedPrice,
+    discountRate: doc.discountRate ?? 0,
+    currentCount: doc.currentQuantity,
+    targetCount: doc.maxQuantity,
+    timeLeft: calcTimeLeft(doc.endDate),
+    hot: doc.currentQuantity >= doc.minQuantity,
+    urgent: isUrgent(doc.endDate)
+  }
+}
 
 const endingProducts = ref([
         {
@@ -391,8 +452,18 @@ const filterByCategory = (categoryId) => {
 }
 
 const goToProduct = (productId) => {
-  router.push({ name: 'product-detail', params: { id: productId } })
+  router.push({ name: 'group-purchase-detail', params: { id: productId } })
 }
+
+onMounted(async () => {
+  try {
+    const docs = await fetchPopularProducts()
+    popularProducts.value = docs.map(mapToPopularCard)
+  } catch (e) {
+    console.error('인기 공동구매 조회 실패', e)
+    popularProducts.value = []
+  }
+})
 </script>
 
 <style scoped>
@@ -407,7 +478,9 @@ const goToProduct = (productId) => {
   padding: 0 20px;
 }
 
-/* 히어로 섹션 */
+/* ==============================
+   히어로 섹션
+============================== */
 .hero {
   position: relative;
   background: #1a1a1a;
@@ -416,12 +489,33 @@ const goToProduct = (productId) => {
   border-bottom: 1px solid #2a2a2a;
 }
 
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+  margin-top: 40px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #cccccc;
+}
+
 .hero-background {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
   opacity: 0.3;
 }
@@ -436,15 +530,13 @@ const goToProduct = (productId) => {
 .hero-title {
   font-size: 48px;
   font-weight: 700;
-  margin: 0 0 16px;
-  letter-spacing: -0.5px;
+  margin-bottom: 16px;
 }
 
 .hero-subtitle {
   font-size: 20px;
-  margin: 0 0 40px;
+  margin-bottom: 40px;
   opacity: 0.95;
-  font-weight: 400;
 }
 
 .search-box {
@@ -456,7 +548,6 @@ const goToProduct = (productId) => {
   border: 1px solid #2a2a2a;
   border-radius: 12px;
   padding: 8px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 .search-input {
@@ -464,46 +555,17 @@ const goToProduct = (productId) => {
   border: none;
   outline: none;
   padding: 12px 16px;
-  font-size: 16px;
-  color: #ffffff;
   background: transparent;
+  color: #ffffff;
 }
 
 .search-input::placeholder {
   color: #666;
 }
 
-.btn-search {
-  padding: 12px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 8px;
-  white-space: nowrap;
-}
-
-.hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 60px;
-  margin-top: 40px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-/* 섹션 공통 */
+/* ==============================
+   섹션 공통
+============================== */
 .section {
   padding: 60px 0;
 }
@@ -524,7 +586,6 @@ const goToProduct = (productId) => {
 .section-title {
   font-size: 28px;
   font-weight: 700;
-  margin: 0;
   color: #ffffff;
 }
 
@@ -532,53 +593,83 @@ const goToProduct = (productId) => {
   color: #ffffff;
   text-decoration: none;
   font-weight: 600;
-  font-size: 16px;
-  transition: color 0.2s;
 }
 
-.view-all:hover {
-  color: #cccccc;
-}
-
-/* 카테고리 */
+/* ==============================
+   카테고리 (가로 드래그)
+============================== */
 .categories-section {
   background: #0a0a0a;
 }
 
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 20px;
+.categories-scroll.dragging {
+  cursor: grabbing;
+}
+
+.categories-scroll.dragging .category-card {
+  pointer-events: none; /* 드래그 중 클릭 방지 */
+}
+
+.categories-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+
+  cursor: grab;
+  user-select: none;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 8px 4px 12px;
+
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: none;
+}
+
+.categories-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .category-card {
-  text-align: center;
-  padding: 24px 16px;
+  flex: 0 0 auto;
+  min-width: 110px;
+  height: 96px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  border-radius: 16px;
+
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .category-card:hover {
-  background: #222222;
   border-color: #ffffff;
   transform: translateY(-2px);
 }
 
 .category-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
+  font-size: 32px;
+  margin-bottom: 6px;
 }
 
 .category-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #ffffff;
 }
 
-/* 상품 그리드 */
+/* ==============================
+   상품 카드
+============================== */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -590,14 +681,12 @@ const goToProduct = (productId) => {
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s;
   cursor: pointer;
+  transition: all 0.3s;
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   border-color: #3a3a3a;
 }
 
@@ -605,16 +694,12 @@ const goToProduct = (productId) => {
   position: relative;
   width: 100%;
   padding-top: 75%;
-  overflow: hidden;
   background: #0f0f0f;
 }
 
 .product-image {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background-size: cover;
   background-position: center;
 }
@@ -627,193 +712,27 @@ const goToProduct = (productId) => {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  color: white;
+  color: #ffffff;
 }
 
-.badge.hot {
-  background: #ff4757;
-}
-
-.badge.urgent {
-  background: #ff6348;
-}
-
-.badge.new {
-  background: #2ed573;
-}
+.badge.hot { background: #ff4757; }
+.badge.urgent { background: #ff6348; }
+.badge.new { background: #2ed573; }
 
 .product-info {
   padding: 20px;
 }
 
-.product-category {
-  font-size: 12px;
-  color: #ffffff;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
 .product-title {
   font-size: 18px;
   font-weight: 700;
-  margin: 0 0 8px;
   color: #ffffff;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.product-seller {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 12px;
-}
-
-.product-price-info {
-  margin-bottom: 16px;
-}
-
-.price-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.original-price {
-  font-size: 14px;
-  color: #666;
-  text-decoration: line-through;
-}
-
-.discount-rate {
-  font-size: 13px;
-  color: #ffffff;
-  font-weight: 600;
-  background: #2a2a2a;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.current-price {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.product-progress {
-  margin-bottom: 16px;
-}
-
-.progress-info {
-  display: flex;
-  justify-content: space-between;
   margin-bottom: 8px;
-  font-size: 13px;
 }
 
-.progress-text {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.progress-target {
-  color: #888;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #0f0f0f;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: #ffffff;
-  border-radius: 4px;
-  transition: width 0.3s;
-}
-
-.product-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.time-left {
-  font-size: 13px;
-  color: #888;
-}
-
-.urgent-time {
-  color: #ff6b6b;
-  font-weight: 600;
-}
-
-.btn {
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-  background: #f0f0f0;
-}
-
-.btn-sm {
-  padding: 8px 16px;
-  font-size: 14px;
-}
-
-/* 특징 섹션 */
-.features-section {
-  background: #0a0a0a;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 32px;
-  margin-top: 40px;
-}
-
-.feature-card {
-  text-align: center;
-  padding: 32px 24px;
-}
-
-.feature-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.feature-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  color: #ffffff;
-}
-
-.feature-desc {
-  font-size: 15px;
-  color: #999;
-  line-height: 1.6;
-  margin: 0;
-}
-
-/* 반응형 */
+/* ==============================
+   반응형
+============================== */
 @media (max-width: 768px) {
   .hero-title {
     font-size: 32px;
@@ -823,44 +742,13 @@ const goToProduct = (productId) => {
     font-size: 16px;
   }
 
-  .search-box {
-    flex-direction: column;
-    padding: 12px;
-  }
-
-  .search-input {
-    width: 100%;
-  }
-
-  .btn-search {
-    width: 100%;
-  }
-
-  .hero-stats {
-    flex-direction: column;
-    gap: 32px;
-  }
-
   .products-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 16px;
   }
-
-  .categories-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 480px) {
-  .hero {
-    padding: 60px 0 40px;
-  }
-
   .section {
     padding: 40px 0;
   }
@@ -868,20 +756,9 @@ const goToProduct = (productId) => {
   .products-grid {
     grid-template-columns: 1fr;
   }
-
-  .categories-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .category-icon {
-    font-size: 32px;
-  }
-
-  .category-name {
-    font-size: 12px;
-  }
 }
 </style>
+
 
 
 
