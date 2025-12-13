@@ -29,33 +29,42 @@ import PointChargeSuccess from '../views/PointChargeSuccess.vue'
 import PointChargeFail from '../views/PointChargeFail.vue'
 
 const routes = [
+  // 공개 페이지 (로그인 불필요)
   { path: '/', name: 'home', component: HomePage },
   { path: '/products', name: 'products', component: ProductsList },
   { path: '/products/:id', name: 'product-detail', component: ProductDetail, props: true },
-  { path: '/cart', name: 'cart', component: CartPage },
-  { path: '/seller', name: 'seller', component: SellerDashboard },
-  { path: '/seller/products', name: 'seller-products', component: SellerProductsList },
-  { path: '/seller/products/:productId/edit', name: 'product-update', component: ProductUpdate, props: true },
-  { path: '/seller/settlement', name: 'seller-settlement', component: SellerSettlement },
-  { path: '/seller/application', name: 'seller-application', component: SellerApplication },
-  { path: '/seller/register/product-register', name: 'product-register', component: ProductRegister },
-  { path: '/seller/profile/:id?', name: 'seller-profile', component: SellerProfile, props: true },
+  { path: '/group-purchases', name: 'group-purchases', component: GroupPurchaseList },
+  { path: '/group-purchases/:id', name: 'group-purchase-detail', component: GroupPurchaseDetail, props: true },
   { path: '/community', name: 'community', component: CommunityList },
   { path: '/community/:id', name: 'community-detail', component: CommunityPostDetail, props: true },
-  { path: '/community/write', name: 'community-write', component: CommunityCreate },
-  { path: '/me/following', name: 'following', component: UserFollowing },
-  { path: '/me/notifications', name: 'notifications', component: UserNotifications },
-  { path: '/me/profile', name: 'profile', component: UserProfile },
   { path: '/users', name: 'users', component: UserDirectory },
   { path: '/login', name: 'login', component: UserLogin },
   { path: '/register', name: 'register', component: UserSignup },
-  { path: '/group-purchases', name: 'group-purchases', component: GroupPurchaseList },
-  { path: '/group-purchases/create', name: 'group-purchase-create', component: GroupPurchaseCreate },
-  { path: '/group-purchases/:id', name: 'group-purchase-detail', component: GroupPurchaseDetail, props: true },
-  { path: '/group-purchases/:id/edit', name: 'group-purchase-edit', component: GroupPurchaseEdit, props: true },
-  { path: '/point/charge', name: 'point-charge', component: PointCharge },
-  { path: '/point/charge/success', name: 'point-charge-success', component: PointChargeSuccess },
-  { path: '/point/charge/fail', name: 'point-charge-fail', component: PointChargeFail }
+
+  // 인증 필요 페이지
+  { path: '/cart', name: 'cart', component: CartPage, meta: { requiresAuth: true } },
+  { path: '/community/write', name: 'community-write', component: CommunityCreate, meta: { requiresAuth: true } },
+  { path: '/me/following', name: 'following', component: UserFollowing, meta: { requiresAuth: true } },
+  { path: '/me/notifications', name: 'notifications', component: UserNotifications, meta: { requiresAuth: true } },
+  { path: '/me/profile', name: 'profile', component: UserProfile, meta: { requiresAuth: true } },
+
+  // 판매자 페이지 (인증 필요)
+  { path: '/seller', name: 'seller', component: SellerDashboard, meta: { requiresAuth: true } },
+  { path: '/seller/products', name: 'seller-products', component: SellerProductsList, meta: { requiresAuth: true } },
+  { path: '/seller/products/:productId/edit', name: 'product-update', component: ProductUpdate, props: true, meta: { requiresAuth: true } },
+  { path: '/seller/settlement', name: 'seller-settlement', component: SellerSettlement, meta: { requiresAuth: true } },
+  { path: '/seller/application', name: 'seller-application', component: SellerApplication, meta: { requiresAuth: true } },
+  { path: '/seller/register/product-register', name: 'product-register', component: ProductRegister, meta: { requiresAuth: true } },
+  { path: '/seller/profile/:id?', name: 'seller-profile', component: SellerProfile, props: true, meta: { requiresAuth: true } },
+
+  // 공동구매 관리 (인증 필요)
+  { path: '/group-purchases/create', name: 'group-purchase-create', component: GroupPurchaseCreate, meta: { requiresAuth: true } },
+  { path: '/group-purchases/:id/edit', name: 'group-purchase-edit', component: GroupPurchaseEdit, props: true, meta: { requiresAuth: true } },
+
+  // 포인트 (인증 필요)
+  { path: '/point/charge', name: 'point-charge', component: PointCharge, meta: { requiresAuth: true } },
+  { path: '/point/charge/success', name: 'point-charge-success', component: PointChargeSuccess, meta: { requiresAuth: true } },
+  { path: '/point/charge/fail', name: 'point-charge-fail', component: PointChargeFail, meta: { requiresAuth: true } }
 ]
 
 const router = createRouter({
@@ -63,12 +72,17 @@ const router = createRouter({
   routes
 })
 
-// 간단한 권한 가드 (목업): 토큰이 필요한 라우트 예시
-const authRequired = new Set(['/community/write','/me/reviews','/me/following','/me/notifications','/me/profile','/group-purchases/create'])
+// 인증 가드: meta.requiresAuth가 true인 라우트는 토큰 필요
 router.beforeEach((to, from, next) => {
-  if (authRequired.has(to.path)) {
+  if (to.meta.requiresAuth) {
     const token = localStorage.getItem('access_token')
-    if (!token) return next({ path: '/', query: { redirect: to.fullPath } })
+    if (!token) {
+      // 로그인 페이지로 리다이렉트하고, 원래 가려던 페이지를 query로 저장
+      return next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+    }
   }
   next()
 })
