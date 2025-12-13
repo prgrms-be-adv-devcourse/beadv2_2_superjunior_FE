@@ -101,6 +101,36 @@
               </div>
             </div>
           </div>
+
+          <!-- 참여하기 버튼 (판매자가 아닌 경우만 표시) -->
+          <div v-if="!isOwner" class="info-card participate-card">
+            <h3>공동구매 참여</h3>
+            <div class="participate-input">
+              <label for="quantity">참여 수량</label>
+              <input
+                id="quantity"
+                v-model.number="participateQuantity"
+                type="number"
+                min="1"
+                :max="groupPurchase.maxQuantity - (groupPurchase.currentQuantity || 0)"
+                placeholder="수량 입력"
+              />
+            </div>
+            <div class="participate-total">
+              <span>총 금액:</span>
+              <strong>₩{{ ((participateQuantity || 0) * (groupPurchase.discountedPrice || 0)).toLocaleString() }}</strong>
+            </div>
+            <button
+              class="btn btn-participate"
+              :disabled="!canParticipate"
+              @click="handleParticipate"
+            >
+              {{ getParticipateButtonText }}
+            </button>
+            <p v-if="groupPurchase.status !== 'OPEN'" class="status-message">
+              {{ getStatusMessage }}
+            </p>
+          </div>
         </div>
       </section>
     </div>
@@ -128,6 +158,7 @@ const router = useRouter()
 const groupPurchase = ref(null)
 const loading = ref(false)
 const imageError = ref(false)
+const participateQuantity = ref(1)
 
 const getDefaultImage = () => {
   return 'https://placehold.co/600x400/1a1a1a/666?text=No+Image'
@@ -147,6 +178,52 @@ const isOwner = computed(() => {
   if (!groupPurchase.value) return false
   const currentUserEmail = localStorage.getItem('user_email')
   return groupPurchase.value.sellerId === currentUserEmail
+})
+
+// 참여 가능 여부
+const canParticipate = computed(() => {
+  if (!groupPurchase.value) return false
+  if (groupPurchase.value.status !== 'OPEN') return false
+  if (!participateQuantity.value || participateQuantity.value < 1) return false
+
+  const remainingQuantity = groupPurchase.value.maxQuantity - (groupPurchase.value.currentQuantity || 0)
+  if (participateQuantity.value > remainingQuantity) return false
+
+  return true
+})
+
+// 참여 버튼 텍스트
+const getParticipateButtonText = computed(() => {
+  if (!groupPurchase.value) return '참여하기'
+
+  switch (groupPurchase.value.status) {
+    case 'SCHEDULED':
+      return '공동구매 준비 중'
+    case 'OPEN':
+      return '참여하기'
+    case 'SUCCESS':
+      return '마감됨'
+    case 'FAILED':
+      return '실패함'
+    default:
+      return '참여하기'
+  }
+})
+
+// 상태 메시지
+const getStatusMessage = computed(() => {
+  if (!groupPurchase.value) return ''
+
+  switch (groupPurchase.value.status) {
+    case 'SCHEDULED':
+      return '공동구매가 아직 시작되지 않았습니다.'
+    case 'SUCCESS':
+      return '이 공동구매는 성공적으로 마감되었습니다.'
+    case 'FAILED':
+      return '이 공동구매는 실패했습니다.'
+    default:
+      return ''
+  }
 })
 
 const loadGroupPurchase = async () => {
@@ -210,6 +287,37 @@ const getTimeRemaining = (endDate) => {
 
 const goToEdit = () => {
   router.push({ name: 'group-purchase-edit', params: { id: props.id } })
+}
+
+const handleParticipate = async () => {
+  if (!canParticipate.value) {
+    alert('참여 조건을 확인해주세요.')
+    return
+  }
+
+  const confirmMessage = `${participateQuantity.value}개를 ₩${(participateQuantity.value * groupPurchase.value.discountedPrice).toLocaleString()}에 구매하시겠습니까?`
+  if (!confirm(confirmMessage)) {
+    return
+  }
+
+  try {
+    // TODO: 백엔드에 공동구매 참여 API 호출
+    // const participateData = {
+    //   groupPurchaseId: props.id,
+    //   quantity: participateQuantity.value
+    // }
+    // await groupPurchaseApi.participateInGroupPurchase(participateData)
+
+    alert('공동구매 참여가 완료되었습니다!')
+
+    // 참여 후 데이터 새로고침
+    await loadGroupPurchase()
+    participateQuantity.value = 1
+  } catch (error) {
+    console.error('공동구매 참여 실패:', error)
+    const errorMessage = error.response?.data?.message || '공동구매 참여에 실패했습니다.'
+    alert(errorMessage)
+  }
 }
 
 const handleDelete = async () => {
@@ -473,6 +581,92 @@ watch(() => props.id, () => {
   font-size: 14px;
   color: #51cf66;
   font-weight: 600;
+}
+
+.participate-card {
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+  border: 2px solid #51cf66;
+}
+
+.participate-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.participate-input label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.participate-input input {
+  padding: 14px 16px;
+  background: #0a0a0a;
+  border: 2px solid #2a2a2a;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #ffffff;
+  transition: border-color 0.2s;
+}
+
+.participate-input input:focus {
+  outline: none;
+  border-color: #51cf66;
+}
+
+.participate-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #0a0a0a;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.participate-total span {
+  color: #999;
+  font-size: 14px;
+}
+
+.participate-total strong {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.btn-participate {
+  width: 100%;
+  padding: 16px;
+  background: #51cf66;
+  color: #0a0a0a;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-participate:hover:not(:disabled) {
+  background: #69db7c;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(81, 207, 102, 0.3);
+}
+
+.btn-participate:disabled {
+  background: #2a2a2a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.status-message {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #999;
+  text-align: center;
 }
 
 .product-image-card {
