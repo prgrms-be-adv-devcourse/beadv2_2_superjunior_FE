@@ -3,7 +3,7 @@ export const sampleProducts = [
     id: 1,
     title: '아이폰 15 Pro Max 256GB',
     subtitle: 'A17 Pro 칩셋과 5배 망원 카메라 탑재',
-    category: '전자제품',
+    category: 'ELECTRONICS',
     seller: '테크샵',
     image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800',
     images: [

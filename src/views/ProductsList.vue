@@ -11,7 +11,7 @@
         </div>
         <div class="stats">
           <div class="stat">
-            <strong>{{ sampleProducts.length }}</strong>
+            <strong>{{ sampleProductsList.length }}</strong>
             <span>등록된 상품</span>
           </div>
           <div class="stat">
@@ -31,14 +31,13 @@
         <div class="filter-row">
           <div class="chips">
             <button
-              v-for="section in sections"
-              :key="section.id"
-              type="button"
+              v-for="status in statusFilters"
+              :key="status.id"
               class="chip"
-              :class="{ active: selectedSection === section.id }"
-              @click="setSection(section.id)"
+              :class="{ active: selectedStatus === status.value }"
+              @click="setStatus(status.value)"
             >
-              {{ section.label }}
+              {{ status.label }}
             </button>
           </div>
           <div class="search">
@@ -53,25 +52,46 @@
         </div>
 
         <div class="filter-row secondary">
-          <div class="categories">
-            <button
-              v-for="category in categories"
-              :key="category.id"
-              type="button"
-              class="category-btn"
-              :class="{ active: selectedCategory === category.id }"
-              @click="filterByCategory(category.id)"
-            >
-              <span class="icon">{{ category.icon }}</span>
-              <span>{{ category.name }}</span>
-            </button>
+            <div class="category-wrapper">
+              <div class="categories primary">
+                <!-- 기본 카테고리 -->
+                <button
+                  v-for="cat in primaryCategories"
+                  :key="cat.value"
+                  class="category-btn"
+                  :class="{ active: selectedCategory === cat.value }"
+                  @click="filterByCategory(cat.value)"
+                >
+                  <span>{{ cat.icon }}</span>
+                  <span>{{ cat.label }}</span>
+                </button>
+
+                <!-- 더보기 버튼 -->
+                <button class="category-btn more" @click="showMoreCategories = !showMoreCategories">
+                  ➕ 더보기
+                </button>
+              </div>
+
+              <!-- 더보기 영역 -->
+              <div v-if="showMoreCategories" class="categories secondary">
+                <button
+                  v-for="cat in secondaryCategories"
+                  :key="cat.value"
+                  class="category-btn"
+                  :class="{ active: selectedCategory === cat.value }"
+                  @click="filterByCategory(cat.value)"
+                >
+                  <span>{{ cat.icon }}</span>
+                  <span>{{ cat.label }}</span>
+                </button>
+              </div>
           </div>
           <div class="sort">
             <label>
               정렬
               <select v-model="sortBy">
                 <option value="popular">인기순</option>
-                <option value="discount">할인율 높은순</option>
+                <option value="discountRate">할인율 높은순</option>
                 <option value="priceLow">가격 낮은순</option>
                 <option value="priceHigh">가격 높은순</option>
                 <option value="deadline">마감 임박순</option>
@@ -147,6 +167,30 @@
             </div>
           </article>
         </div>
+        <div
+          v-if="totalPages > 1"
+          class="pagination"
+        >
+          <button
+            class="page-btn"
+            :disabled="currentPage === 0"
+            @click="goToPage(currentPage - 1)"
+          >
+            이전
+          </button>
+
+          <span class="page-info">
+            {{ currentPage + 1 }} / {{ totalPages }}
+          </span>
+
+          <button
+            class="page-btn"
+            :disabled="currentPage + 1 === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            다음
+          </button>
+        </div>
       </div>
     </section>
   </main>
@@ -155,7 +199,8 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { sampleProducts } from '@/data/products'
+import NoImages from '@/data/NoImages.png'
+import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -167,20 +212,47 @@ const selectedCategory = ref(null)
 const sortBy = ref('popular')
 const wishlist = ref(new Set())
 
+const currentPage = ref(0)
+const pageSize = 3
+const totalPages = ref(0)
+
 const categories = [
-  { id: 1, name: '전체', icon: '✨' },
-  { id: 2, name: '전자제품', icon: '📱' },
-  { id: 3, name: '패션', icon: '👟' },
-  { id: 4, name: '식품', icon: '🍎' },
-  { id: 5, name: '뷰티', icon: '💄' }
+  { id: 1, value: 'ALL', label: '전체', icon: '✨' },
+
+  { id: 2, value: 'HOME', label: '생활 · 주방', icon: '🏠' },
+  { id: 3, value: 'FOOD', label: '식품 · 간식', icon: '🍎' },
+  { id: 4, value: 'HEALTH', label: '건강 · 헬스', icon: '💊' },
+  { id: 5, value: 'BEAUTY', label: '뷰티', icon: '💄' },
+  { id: 6, value: 'FASHION', label: '패션 · 의류', icon: '👟' },
+  { id: 7, value: 'ELECTRONICS', label: '전자 · 디지털', icon: '📱' },
+  { id: 8, value: 'KIDS', label: '유아 · 어린이', icon: '🧸' },
+  { id: 9, value: 'HOBBY', label: '취미', icon: '🎮' },
+  { id: 10, value: 'PET', label: '반려동물', icon: '🐶' }
 ]
 
-const sections = [
-  { id: 'popular', label: '인기' },
-  { id: 'new', label: '신규' },
-  { id: 'ending', label: '마감 임박' },
-  { id: 'discount', label: '할인율 높은 순' }
+const showMoreCategories = ref(false)
+
+const primaryCategories = computed(() =>
+  categories.slice(0, 4) // 전체 + 3개
+)
+
+const secondaryCategories = computed(() =>
+  categories.slice(4)
+)
+
+const statusFilters = [
+  { id: 'OPEN', label: '진행 중', value: 'OPEN' },
+  { id: 'SCHEDULED', label: '진행 전', value: 'SCHEDULED' },
+  { id: 'SUCCESS', label: '성공', value: 'SUCCESS' },
+  { id: 'FAILED', label: '실패', value: 'FAILED' }
 ]
+
+const selectedStatus = ref('OPEN')
+
+const setStatus = (status) => {
+  selectedStatus.value = status
+  currentPage.value = 0
+}
 
 const participantsCount = computed(() => {
   return sampleProductsList.value.reduce((sum, product) => sum + product.currentCount, 0)
@@ -193,71 +265,118 @@ const totalSavings = computed(() => {
   )
 })
 
-const filteredProducts = computed(() => {
-  let result = [...sampleProductsList.value]
+const filteredProducts = computed(() => sampleProductsList.value)
 
-  if (keyword.value) {
-    const keywordLower = keyword.value.toLowerCase()
-    result = result.filter(
-      (product) =>
-        product.title.toLowerCase().includes(keywordLower) ||
-        product.subtitle.toLowerCase().includes(keywordLower)
-    )
-  }
-
-  if (selectedCategory.value && selectedCategory.value !== 1) {
-    const category = categories.find((item) => item.id === selectedCategory.value)?.name
-    result = result.filter((product) => product.category === category)
-  }
-
-  if (selectedSection.value === 'new') {
-    result = result.slice(-4)
-  } else if (selectedSection.value === 'ending') {
-    result = result.filter((product) => product.timeLeft.includes('시간'))
-  } else if (selectedSection.value === 'discount') {
-    result = result.sort((a, b) => b.discountRate - a.discountRate)
-  }
-
-  switch (sortBy.value) {
-    case 'discount':
-      result.sort((a, b) => b.discountRate - a.discountRate)
-      break
+const toApiSort = (sortBy) => {
+  switch (sortBy) {
+    case 'discountRate':
+      return 'discountRate,desc'
     case 'priceLow':
-      result.sort((a, b) => a.currentPrice - b.currentPrice)
-      break
+      return 'discountedPrice,asc'
     case 'priceHigh':
-      result.sort((a, b) => b.currentPrice - a.currentPrice)
-      break
+      return 'discountedPrice,desc'
     case 'deadline':
-      result.sort((a, b) => {
-        const aTime = a.timeLeft.includes('시간') ? 0 : 1
-        const bTime = b.timeLeft.includes('시간') ? 0 : 1
-        return aTime - bTime
-      })
-      break
+      return 'endDate,asc'         // ✅ 마감 임박순
     default:
-      result.sort((a, b) => b.currentCount / b.targetCount - a.currentCount / a.targetCount)
+      return 'currentQuantity,desc'
   }
-  return result
-})
-
-const loadProducts = () => {
-  // 기본 샘플 상품과 등록된 상품 합치기
-  const registeredProducts = JSON.parse(localStorage.getItem('all_products') || '[]')
-  sampleProductsList.value = [...sampleProducts, ...registeredProducts]
 }
 
-const setSection = (section) => {
-  selectedSection.value = section
-  router.replace({ query: { ...route.query, section } })
+const searchGroupPurchases = async ({
+  keyword = '',
+  status = 'OPEN',
+  category = '',
+  page = 0,
+  size = 10,
+  sort = 'createdAt,desc'
+} = {}) => {
+  const response = await axios.get('/api/searches/purchase/search', {
+    params: {
+      keyword,
+      status,
+      category,
+      page,
+      size,
+      sort
+    }
+  })
+
+  // ResponseDto<PageResponse<...>> 에서 data만 반환
+  return response.data.data
 }
 
-const filterByCategory = (categoryId) => {
-  selectedCategory.value = selectedCategory.value === categoryId ? null : categoryId
+const mapToProductCard = (doc) => {
+  const originalPrice = doc.productDocumentEmbedded.price
+  const discountedPrice = doc.discountedPrice
+
+  return {
+    id: doc.groupPurchaseId,
+    title: doc.title,
+    subtitle: doc.description,
+    category: doc.productDocumentEmbedded.category, // KIDS, HOME
+    currentPrice: discountedPrice,
+    originalPrice,
+    discountRate: (doc.productDocumentEmbedded.price > 0
+                       ? Math.round(((doc.productDocumentEmbedded.price - doc.discountedPrice) / doc.productDocumentEmbedded.price) * 100)
+                       : 0),
+    currentCount: doc.currentQuantity,
+    targetCount: doc.maxQuantity,
+    timeLeft: calcTimeLeft(doc.endDate),
+    image: NoImages, // 임시 이미지
+    badges: [doc.status] // SCHEDULED 등
+  }
 }
 
-const search = () => {
-  // 메서드 존재로 입력값과 동기화만 수행
+const calcTimeLeft = (endDate) => {
+  if (!endDate) return ''
+
+  const end = new Date(endDate)
+  const now = new Date()
+
+  const diffMs = end.getTime() - now.getTime()
+  if (diffMs <= 0) return '마감'
+
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+
+  if (days > 0) {
+    return `${days}일 ${hours}시간 남음`
+  }
+
+  return `${hours}시간 남음`
+}
+
+const loadProducts = async () => {
+  const page = await searchGroupPurchases({
+    keyword: keyword.value,
+    status: selectedStatus.value, // 상태 필터 쓰고 있으면
+    category:
+      selectedCategory.value && selectedCategory.value !== 'ALL'
+        ? selectedCategory.value
+        : '',
+    page: currentPage.value,
+    size: pageSize,
+    sort: toApiSort(sortBy.value) // ✅ 서버 정렬
+  })
+
+  sampleProductsList.value = page.content.map(mapToProductCard)
+  totalPages.value = page.totalPages
+}
+
+const goToPage = (page) => {
+  if (page < 0 || page >= totalPages.value) return
+  currentPage.value = page
+  loadProducts()
+}
+
+const filterByCategory = (categoryValue) => {
+  selectedCategory.value =
+    selectedCategory.value === categoryValue ? null : categoryValue;
+};
+
+const search = async () => {
+  await loadProducts()
 }
 
 const resetFilters = () => {
@@ -277,7 +396,7 @@ const toggleWishlist = (productId) => {
 }
 
 const goToDetail = (productId) => {
-  router.push({ name: 'product-detail', params: { id: productId } })
+  router.push({ name: 'group-purchase-detail', params: { id: productId } })
 }
 
 const addToCart = (product) => {
@@ -291,11 +410,53 @@ onMounted(() => {
   loadProducts()
 })
 
-watch(() => route.query.section, (section) => {
-  if (section && sections.some((item) => item.id === section)) {
-    selectedSection.value = section
+watch(
+  () => route.query,
+  (query) => {
+    if (query.status) {
+      selectedStatus.value = query.status
+    }
+
+    if (query.category) {
+      selectedCategory.value = query.category
+    }
+
+    if (query.keyword) {
+      keyword.value = query.keyword
+    }
+
+    if (query.page) {
+      currentPage.value = Number(query.page)
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  [selectedSection, selectedCategory, keyword, sortBy, currentPage],
+  () => {
+    loadProducts()
+
+    router.replace({
+      query: {
+        section: selectedSection.value,
+        category:
+          selectedCategory.value && selectedCategory.value !== 'ALL'
+            ? selectedCategory.value
+            : undefined,
+        keyword: keyword.value || undefined,
+        page: currentPage.value
+      }
+    })
   }
-}, { immediate: true })
+)
+
+watch(
+  [selectedStatus, selectedCategory, keyword, sortBy, currentPage],
+  () => {
+    loadProducts()
+  }
+)
 </script>
 
 <style scoped>
@@ -423,11 +584,24 @@ watch(() => route.query.section, (section) => {
   background: #151515;
 }
 
+.category-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
 .categories {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   flex: 1;
+}
+
+.categories.primary {
+  margin-bottom: 8px;
+}
+
+.categories.secondary {
+  margin-top: 4px;
 }
 
 .category-btn {
@@ -673,6 +847,56 @@ watch(() => route.query.section, (section) => {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.pagination {
+  margin-top: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: #999;
+  font-size: 14px;
+}
+
+.image-wrapper {
+  position: relative;
+  padding-top: 72%;
+}
+
+.image-wrapper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-wrapper.placeholder {
+  background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
+}
+
+.image-wrapper.placeholder img {
+  object-fit: contain;
+  padding: 24px;
+  opacity: 0.4;
 }
 </style>
 
