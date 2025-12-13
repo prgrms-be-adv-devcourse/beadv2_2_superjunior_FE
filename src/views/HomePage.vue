@@ -70,9 +70,11 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
-              <div v-if="product.urgent" class="badge urgent">마감임박</div>
-              <div v-if="product.hot" class="badge hot">인기</div>
+              <div
+                class="product-image"
+                :style="{ backgroundImage: `url(${product.image})` }"
+              ></div>
+              <div class="badge hot">인기</div>
             </div>
             <div class="product-info">
               <div class="product-category">{{ product.category }}</div>
@@ -171,7 +173,7 @@
         </div>
         <div class="products-grid">
           <div 
-            v-for="product in newProducts" 
+            v-for="product in newProducts"
             :key="product.id" 
             class="product-card"
             @click="goToProduct(product.id)"
@@ -359,13 +361,14 @@ const fetchPopularProducts = async () => {
 }
 
 //형식 맞추기
-const mapToPopularCard = (doc) => {
+const mapToProductCard = (doc) => {
   const originalPrice = doc.productDocumentEmbedded?.price ?? 0
   const discountedPrice = doc.discountedPrice ?? originalPrice
 
   return {
     id: doc.groupPurchaseId,
     title: doc.title,
+    subtitle: doc.description,
     category: doc.productDocumentEmbedded?.category ?? '',
     seller: doc.sellerName,
     image: doc.productDocumentEmbedded?.imageUrl || NoImages,
@@ -380,67 +383,37 @@ const mapToPopularCard = (doc) => {
   }
 }
 
-const endingProducts = ref([
-        {
-          id: 5,
-          title: '갤럭시 워치6 클래식',
-          category: '전자제품',
-          seller: '스마트샵',
-          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
-          originalPrice: 399000,
-          currentPrice: 299000,
-          discountRate: 25,
-          currentCount: 18,
-          targetCount: 20,
-          timeLeft: '3시간 남음',
-          urgent: true
-        },
-        {
-          id: 6,
-          title: '프리미엄 와인 세트',
-          category: '식품',
-          seller: '와인나라',
-          image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400',
-          originalPrice: 129000,
-          currentPrice: 89000,
-          discountRate: 31,
-          currentCount: 28,
-          targetCount: 30,
-          timeLeft: '5시간 남음',
-          urgent: true
-        }
-      ])
+//마감 임박
+const endingProducts = ref([])
 
-const newProducts = ref([
-        {
-          id: 7,
-          title: '무선 이어폰 프로',
-          category: '전자제품',
-          seller: '오디오샵',
-          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
-          originalPrice: 199000,
-          currentPrice: 139000,
-          discountRate: 30,
-          currentCount: 12,
-          targetCount: 50,
-          timeLeft: '7일 남음',
-          urgent: false
-        },
-        {
-          id: 8,
-          title: '프리미엄 쿠션 세트',
-          category: '뷰티',
-          seller: '코스메틱',
-          image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400',
-          originalPrice: 69000,
-          currentPrice: 49000,
-          discountRate: 29,
-          currentCount: 8,
-          targetCount: 30,
-          timeLeft: '6일 남음',
-          urgent: false
-        }
-      ])
+const fetchEndingProducts = async () => {
+  const response = await axios.get('/api/searches/purchase/search', {
+    params: {
+      status: 'OPEN',
+      sort: 'endDate,asc',   // ✅ 마감 임박순
+      page: 0,
+      size: 3
+    }
+  })
+
+  return response.data.data.content
+}
+
+//최신 공동구매
+const newProducts = ref([])
+
+const fetchNewProducts = async () => {
+  const response = await axios.get('/api/searches/purchase/search', {
+    params: {
+      status: 'OPEN',
+      sort: 'startDate,desc',   // ✅ 최신순
+      page: 0,
+      size: 3
+    }
+  })
+
+  return response.data.data.content
+}
 
 const onSearch = () => {
   if (!keyword.value.trim()) return
@@ -457,11 +430,20 @@ const goToProduct = (productId) => {
 
 onMounted(async () => {
   try {
-    const docs = await fetchPopularProducts()
-    popularProducts.value = docs.map(mapToPopularCard)
+    const [popularDocs, endingDocs, newDocs] = await Promise.all([
+      fetchPopularProducts(),
+      fetchEndingProducts(),
+      fetchNewProducts()
+    ])
+
+    popularProducts.value = popularDocs.map(mapToProductCard)
+    endingProducts.value = endingDocs.map(mapToProductCard)
+    newProducts.value = newDocs.map(mapToProductCard)
   } catch (e) {
-    console.error('인기 공동구매 조회 실패', e)
+    console.error('메인 페이지 상품 조회 실패', e)
     popularProducts.value = []
+    endingProducts.value = []
+    newProducts.value = []
   }
 })
 </script>
