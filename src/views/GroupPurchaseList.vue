@@ -26,9 +26,9 @@
           <div class="filter-actions">
             <select v-model="sortFilter" class="sort-filter" @change="loadGroupPurchases">
               <option value="">최신순</option>
-              <option value="currentQuantity,desc">인기순 (참여자 많은 순)</option>
+              <option value="currentQuantity,desc">인기순</option>
               <option value="endDate,asc">마감 직전 순</option>
-              <option value="createdAt,desc">등록순 (최신)</option>
+              <option value="createdAt,desc">등록순</option>
             </select>
             <select v-model="statusFilter" class="status-filter">
               <option value="">전체 상태</option>
