@@ -623,10 +623,6 @@ onMounted(async () => {
   cursor: grabbing;
 }
 
-.categories-scroll.dragging .category-card {
-  pointer-events: none; /* 드래그 중 클릭 방지 */
-}
-
 .categories-scroll {
   display: flex;
   flex-wrap: nowrap;
