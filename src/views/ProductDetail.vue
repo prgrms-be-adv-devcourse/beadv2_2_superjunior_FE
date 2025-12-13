@@ -166,6 +166,32 @@ const router = useRouter()
 const product = ref(null)
 const selectedImage = ref(null)
 
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
+
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452857297128-d9c29adba80b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+}
+
 const getDefaultImage = () => {
   return 'https://placehold.co/400x400/1a1a1a/666?text=No+Image'
 }
@@ -175,15 +201,21 @@ const loadProduct = async () => {
     const response = await api.get(`/products/${props.id}`)
     const productData = response.data.data ?? response.data
 
-    // 백엔드에서 이미지 URL이 있으면 사용, 없으면 기본 이미지
-    const productImage = productData.imageUrl || productData.image || getDefaultImage()
+    // 카테고리 한글명 변환
+    const categoryKorean = categoryMap[productData.category] || productData.category || '기타'
+
+    // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지 > 기본 플레이스홀더
+    let productImage = productData.imageUrl || productData.image
+    if (!productImage || productImage.trim() === '') {
+      productImage = categoryImages[productData.category] || categoryImages['PET']
+    }
     const productImages = productData.images || [productImage]
 
     product.value = {
       id: productData.productId,
       title: productData.name,
       subtitle: null,
-      category: productData.category,
+      category: categoryKorean,
       price: productData.price,
       currentPrice: productData.price,
       originalPrice: productData.price,

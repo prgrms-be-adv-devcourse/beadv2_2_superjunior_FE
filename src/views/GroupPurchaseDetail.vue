@@ -167,14 +167,48 @@ const loading = ref(false)
 const imageError = ref(false)
 const participateQuantity = ref(1)
 
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
+
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=600',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600',
+  'HOBBY': 'https://images.unsplash.com/photo-1452857297128-d9c29adba80b?w=600',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=600'
+}
+
 const getDefaultImage = () => {
   return 'https://placehold.co/600x400/1a1a1a/666?text=No+Image'
 }
 
 const productImage = computed(() => {
   if (imageError.value) return getDefaultImage()
-  // 백엔드에서 이미지 URL이 제공되면 사용, 없으면 기본 이미지
-  return groupPurchase.value?.imageUrl || groupPurchase.value?.image || getDefaultImage()
+  if (!groupPurchase.value) return getDefaultImage()
+
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = groupPurchase.value.imageUrl || groupPurchase.value.image
+  if (!image || image.trim() === '') {
+    // 원본 영문 카테고리로 이미지 매칭
+    const category = groupPurchase.value.categoryOriginal || groupPurchase.value.category
+    image = categoryImages[category] || categoryImages['PET']
+  }
+  return image || getDefaultImage()
 })
 
 const handleImageError = () => {
@@ -244,8 +278,12 @@ const loadGroupPurchase = async () => {
     // 응답 데이터 구조에 따라 조정
     const data = response.data.data || response.data
 
-    // 백엔드 응답을 그대로 사용
-    groupPurchase.value = data
+    // 카테고리 정보 추가 (원본 영문 카테고리는 이미지 매칭용으로 유지)
+    groupPurchase.value = {
+      ...data,
+      categoryOriginal: data.category, // 원본 카테고리 (영문, 이미지 매칭용)
+      categoryKorean: categoryMap[data.category] || data.category || '기타' // 한글 카테고리
+    }
   } catch (error) {
     console.error('공동구매 상세 조회 실패:', error)
     groupPurchase.value = null
