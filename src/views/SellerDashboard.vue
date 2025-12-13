@@ -154,7 +154,10 @@
         <article class="panel wide">
           <div class="panel-header">
             <h2>공동 구매 목록</h2>
-            <router-link to="/group-purchases" class="link">전체 보기 →</router-link>
+            <div class="header-actions">
+              <router-link to="/group-purchases/create" class="btn-new-product">+ 공동구매 등록</router-link>
+              <router-link to="/group-purchases" class="link">전체 보기 →</router-link>
+            </div>
           </div>
           <div class="group-purchase-list">
             <div
@@ -184,6 +187,7 @@
             </div>
             <div v-if="sellerProducts.length === 0" class="empty-state">
               <p>진행 중인 공동구매가 없습니다</p>
+              <router-link to="/group-purchases/create" class="btn btn-primary">공동구매 등록하기</router-link>
             </div>
           </div>
         </article>
