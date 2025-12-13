@@ -9,6 +9,7 @@
             <img
               :src="selectedImage || product.image || product.images?.[0]"
               :alt="product.title"
+              @error="handleImageError"
             />
           </div>
 
@@ -23,7 +24,7 @@
               :class="{ active: selectedImage === img || (!selectedImage && index === 0) }"
               @click="selectedImage = img"
             >
-              <img :src="img" :alt="`${product.title} ${index + 1}`" />
+              <img :src="img" :alt="`${product.title} ${index + 1}`" @error="e => e.target.src = getDefaultImage()" />
             </div>
           </div>
         </div>
@@ -165,10 +166,18 @@ const router = useRouter()
 const product = ref(null)
 const selectedImage = ref(null)
 
+const getDefaultImage = () => {
+  return 'https://placehold.co/400x400/1a1a1a/666?text=No+Image'
+}
+
 const loadProduct = async () => {
   try {
     const response = await api.get(`/products/${props.id}`)
     const productData = response.data.data ?? response.data
+
+    // 백엔드에서 이미지 URL이 있으면 사용, 없으면 기본 이미지
+    const productImage = productData.imageUrl || productData.image || getDefaultImage()
+    const productImages = productData.images || [productImage]
 
     product.value = {
       id: productData.productId,
@@ -184,8 +193,8 @@ const loadProduct = async () => {
       sellerId: productData.sellerId,
       createdAt: productData.createdAt,
       updatedAt: productData.updatedAt,
-      image: '/placeholder-product.jpg',
-      images: ['/placeholder-product.jpg'],
+      image: productImage,
+      images: productImages,
     }
   } catch (error) {
     console.error('상품 조회 실패:', error)
@@ -196,6 +205,10 @@ const loadProduct = async () => {
 const goToSeller = () => {
   if (!product.value) return
   router.push({ name: 'seller', params: { id: product.value.sellerId } })
+}
+
+const handleImageError = (e) => {
+  e.target.src = getDefaultImage()
 }
 
 const formatDate = (dateString) => {

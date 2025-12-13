@@ -1,12 +1,21 @@
 <template>
-  <main v-if="groupPurchase" class="group-purchase-detail-page">
+  <main v-if="loading" class="group-purchase-detail-page">
+    <div class="container">
+      <div class="loading-container">
+        <p>로딩 중...</p>
+      </div>
+    </div>
+  </main>
+  <main v-else-if="groupPurchase" class="group-purchase-detail-page">
     <div class="container">
       <div class="detail-header">
         <div class="header-info">
-          <div class="status-badge" :class="groupPurchase.status.toLowerCase()">
+          <div class="status-badge" :class="groupPurchase.status?.toLowerCase()">
             {{ getStatusText(groupPurchase.status) }}
           </div>
-          <span class="category">{{ groupPurchase.category }}</span>
+          <span v-if="groupPurchase.createdAt" class="created-date">
+            생성일: {{ formatDate(groupPurchase.createdAt) }}
+          </span>
         </div>
         <div v-if="isOwner" class="owner-actions">
           <button class="btn btn-outline" @click="goToEdit">수정</button>
@@ -16,12 +25,22 @@
 
       <section class="detail-content">
         <div class="main-info">
+          <div class="product-image-section">
+            <img
+              :src="productImage"
+              :alt="groupPurchase.title"
+              @error="handleImageError"
+            />
+          </div>
           <h1>{{ groupPurchase.title }}</h1>
-          <p class="product-name">상품: {{ groupPurchase.productName }}</p>
-          <p class="seller-info">판매자: {{ groupPurchase.seller }}</p>
+          <div v-if="groupPurchase.originalUrl" class="product-link">
+            <a :href="groupPurchase.originalUrl" target="_blank" rel="noopener noreferrer">
+              상품 원본 페이지 보기 →
+            </a>
+          </div>
           <div class="description">
             <h3>설명</h3>
-            <p>{{ groupPurchase.description }}</p>
+            <p>{{ groupPurchase.description || '설명이 없습니다.' }}</p>
           </div>
         </div>
 
@@ -29,11 +48,13 @@
           <div class="info-card">
             <h3>가격 정보</h3>
             <div class="price-box">
-              <span class="discount-price">₩{{ groupPurchase.discountPrice.toLocaleString() }}</span>
-              <span class="original-price">정가 ₩{{ groupPurchase.originalPrice.toLocaleString() }}</span>
+              <span class="discount-price">₩{{ groupPurchase.discountedPrice?.toLocaleString() }}</span>
+              <span v-if="groupPurchase.price" class="original-price">
+                정가 ₩{{ groupPurchase.price.toLocaleString() }}
+              </span>
             </div>
-            <div class="discount-rate">
-              할인율: {{ discountRate }}%
+            <div v-if="groupPurchase.price && groupPurchase.discountedPrice" class="discount-rate">
+              할인율: {{ Math.round(((groupPurchase.price - groupPurchase.discountedPrice) / groupPurchase.price) * 100) }}%
             </div>
           </div>
 
@@ -42,25 +63,25 @@
             <div class="quantity-info">
               <div class="quantity-row">
                 <span>최소 수량:</span>
-                <strong>{{ groupPurchase.minQuantity }}명</strong>
+                <strong>{{ groupPurchase.minQuantity }}개</strong>
               </div>
               <div class="quantity-row">
                 <span>최대 수량:</span>
-                <strong>{{ groupPurchase.maxQuantity }}명</strong>
+                <strong>{{ groupPurchase.maxQuantity }}개</strong>
               </div>
               <div class="quantity-row">
-                <span>현재 참여자:</span>
-                <strong>{{ groupPurchase.currentCount }}명</strong>
+                <span>현재 참여 수량:</span>
+                <strong>{{ groupPurchase.currentQuantity || 0 }}개</strong>
               </div>
             </div>
             <div class="progress-bar">
               <div
                 class="progress-fill"
-                :style="{ width: `${Math.min((groupPurchase.currentCount / groupPurchase.maxQuantity) * 100, 100)}%` }"
+                :style="{ width: `${Math.min(((groupPurchase.currentQuantity || 0) / groupPurchase.maxQuantity) * 100, 100)}%` }"
               ></div>
             </div>
             <div class="progress-text">
-              {{ Math.round((groupPurchase.currentCount / groupPurchase.maxQuantity) * 100) }}% 달성
+              {{ Math.round(((groupPurchase.currentQuantity || 0) / groupPurchase.maxQuantity) * 100) }}% 달성
             </div>
           </div>
 
@@ -80,24 +101,6 @@
               </div>
             </div>
           </div>
-
-          <div v-if="groupPurchase.productImage" class="product-image-card">
-            <img :src="groupPurchase.productImage" :alt="groupPurchase.productName" />
-          </div>
-        </div>
-      </section>
-
-      <section v-if="groupPurchase.participants && groupPurchase.participants.length > 0" class="participants-section">
-        <h2>참여자 목록</h2>
-        <div class="participants-list">
-          <div
-            v-for="(participant, index) in groupPurchase.participants"
-            :key="index"
-            class="participant-item"
-          >
-            <span>{{ participant.name || `참여자 ${index + 1}` }}</span>
-            <span>{{ participant.quantity }}개</span>
-          </div>
         </div>
       </section>
     </div>
@@ -109,8 +112,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch} from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { groupPurchaseApi } from '@/api/axios'
 
 // eslint-disable-next-line no-undef
 const props = defineProps({
@@ -122,6 +126,22 @@ const props = defineProps({
 
 const router = useRouter()
 const groupPurchase = ref(null)
+const loading = ref(false)
+const imageError = ref(false)
+
+const getDefaultImage = () => {
+  return 'https://placehold.co/600x400/1a1a1a/666?text=No+Image'
+}
+
+const productImage = computed(() => {
+  if (imageError.value) return getDefaultImage()
+  // 백엔드에서 이미지 URL이 제공되면 사용, 없으면 기본 이미지
+  return groupPurchase.value?.imageUrl || groupPurchase.value?.image || getDefaultImage()
+})
+
+const handleImageError = () => {
+  imageError.value = true
+}
 
 const isOwner = computed(() => {
   if (!groupPurchase.value) return false
@@ -129,18 +149,25 @@ const isOwner = computed(() => {
   return groupPurchase.value.sellerId === currentUserEmail
 })
 
-const discountRate = computed(() => {
-  if (!groupPurchase.value) return 0
-  return Math.round(
-    ((groupPurchase.value.originalPrice - groupPurchase.value.discountPrice) /
-      groupPurchase.value.originalPrice) *
-      100
-  )
-})
+const loadGroupPurchase = async () => {
+  loading.value = true
+  imageError.value = false // 이미지 에러 상태 초기화
+  try {
+    // 백엔드 API 호출
+    const response = await groupPurchaseApi.getGroupPurchaseById(props.id)
+    console.log('공동구매 상세 조회 성공:', response.data)
 
-const loadGroupPurchase = () => {
-  const groupPurchases = JSON.parse(localStorage.getItem('group_purchases') || '[]')
-  groupPurchase.value = groupPurchases.find((gp) => gp.id === Number(props.id))
+    // 응답 데이터 구조에 따라 조정
+    const data = response.data.data || response.data
+
+    // 백엔드 응답을 그대로 사용
+    groupPurchase.value = data
+  } catch (error) {
+    console.error('공동구매 상세 조회 실패:', error)
+    groupPurchase.value = null
+  } finally {
+    loading.value = false
+  }
 }
 
 const getStatusText = (status) => {
@@ -185,17 +212,24 @@ const goToEdit = () => {
   router.push({ name: 'group-purchase-edit', params: { id: props.id } })
 }
 
-const handleDelete = () => {
+const handleDelete = async () => {
   if (confirm('정말 이 공동구매를 삭제하시겠습니까?')) {
-    const groupPurchases = JSON.parse(localStorage.getItem('group_purchases') || '[]')
-    const filtered = groupPurchases.filter((gp) => gp.id !== Number(props.id))
-    localStorage.setItem('group_purchases', JSON.stringify(filtered))
-    alert('공동구매가 삭제되었습니다.')
-    router.push('/group-purchases')
+    try {
+      // TODO: 백엔드에 공동구매 삭제 API가 추가되면 여기서 호출
+      // await groupPurchaseApi.deleteGroupPurchase(props.id)
+
+      alert('공동구매가 삭제되었습니다.')
+      router.push('/group-purchases')
+    } catch (error) {
+      console.error('공동구매 삭제 실패:', error)
+      alert('공동구매 삭제에 실패했습니다.')
+    }
   }
 }
 
-loadGroupPurchase()
+onMounted(() => {
+  loadGroupPurchase()
+})
 
 watch(() => props.id, () => {
   loadGroupPurchase()
@@ -255,7 +289,7 @@ watch(() => props.id, () => {
   color: #ffe3e3;
 }
 
-.category {
+.created-date {
   font-size: 14px;
   color: #999;
   font-weight: 600;
@@ -273,6 +307,22 @@ watch(() => props.id, () => {
   margin-bottom: 32px;
 }
 
+.product-image-section {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 32px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0f0f0f;
+}
+
+.product-image-section img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
 .main-info h1 {
   font-size: 32px;
   font-weight: 700;
@@ -280,16 +330,22 @@ watch(() => props.id, () => {
   margin-bottom: 16px;
 }
 
-.product-name {
-  font-size: 18px;
-  color: #e0e0e0;
-  margin-bottom: 8px;
+.product-link {
+  margin-bottom: 24px;
 }
 
-.seller-info {
+.product-link a {
+  display: inline-block;
+  color: #51cf66;
+  text-decoration: none;
   font-size: 16px;
-  color: #999;
-  margin-bottom: 24px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.product-link a:hover {
+  color: #69db7c;
+  text-decoration: underline;
 }
 
 .description {
@@ -509,6 +565,13 @@ watch(() => props.id, () => {
   text-align: center;
   padding: 100px 20px;
   color: #ffffff;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 100px 20px;
+  color: #ffffff;
+  font-size: 18px;
 }
 
 @media (max-width: 900px) {

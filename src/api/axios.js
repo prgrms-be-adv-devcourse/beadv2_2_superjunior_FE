@@ -46,6 +46,7 @@ export const productApi = {
 // 공동구매 관련 API
 export const groupPurchaseApi = {
     createGroupPurchase: (data) => api.post("/purchases", data),
+    getGroupPurchaseById: (purchaseId) => api.get(`/purchases/${purchaseId}`),
 };
 
 export default api;
