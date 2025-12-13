@@ -55,8 +55,24 @@ api.interceptors.response.use(
         // 401 = 인증 실패 (백엔드에서 토큰 갱신도 실패한 경우)
         if (error.response?.status === 401) {
             const currentPath = router.currentRoute.value.fullPath;
+            const hadToken = !!localStorage.getItem('access_token');
 
-            // 이미 로그인 페이지가 아닌 경우에만 리다이렉트
+            // 공개 페이지 목록 (로그인 없이 접근 가능한 페이지)
+            const publicPaths = ['/', '/products', '/group-purchases', '/community', '/login', '/register', '/users'];
+
+            // 현재 경로가 공개 페이지인지 확인
+            const isPublicPage = publicPaths.some(path => {
+                return currentPath === path || currentPath.startsWith(path + '/');
+            });
+
+            // 공개 페이지에서 401이 발생하고 원래 토큰이 없었다면 (비로그인 사용자)
+            // 리다이렉트하지 않고 에러만 반환
+            if (isPublicPage && !hadToken) {
+                console.log('공개 페이지에서 비로그인 사용자 - 401 에러 무시');
+                return Promise.reject(error);
+            }
+
+            // 인증이 필요한 페이지이거나 토큰이 만료된 경우에만 리다이렉트
             if (currentPath !== "/login" && currentPath !== "/register") {
                 // 인증 정보 초기화
                 localStorage.removeItem('access_token');
@@ -64,6 +80,7 @@ api.interceptors.response.use(
                 localStorage.removeItem('user_email');
                 localStorage.removeItem('member_id');
 
+                alert('로그인이 필요합니다.');
                 router.push({
                     path: "/login",
                     query: { redirect: currentPath },

@@ -268,16 +268,7 @@ const categoryImages = {
   'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
   'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
   'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
-  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400',
-  '생활 & 주방': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
-  '식품 & 간식': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-  '건강 & 헬스': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
-  '뷰티': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
-  '패션 & 의류': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
-  '전자 & 디지털': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
-  '유아 & 어린이': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
-  '취미': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
-  '반려동물': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
 }
 
 // 카테고리 한글 변환

@@ -201,16 +201,7 @@ const categoryImages = {
   'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
   'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
   'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
-  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400',
-  '생활 & 주방': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
-  '식품 & 간식': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-  '건강 & 헬스': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
-  '뷰티': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
-  '패션 & 의류': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
-  '전자 & 디지털': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
-  '유아 & 어린이': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
-  '취미': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
-  '반려동물': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
 }
 
 // 카테고리 한글 변환
@@ -247,14 +238,23 @@ const getTimeRemaining = (endDate) => {
 
 // 백엔드 데이터를 프론트엔드 형식으로 변환
 const transformGroupPurchase = (gp) => {
+  // 디버그: 백엔드에서 받은 카테고리 확인
+  console.log('백엔드 카테고리:', gp.category, '| 상품:', gp.title)
+
   // 카테고리 변환 (백엔드 enum -> 한글)
   const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+
+  // 카테고리 매핑 안 되면 경고
+  if (!categoryMap[gp.category]) {
+    console.warn('⚠️ 카테고리 매핑 실패:', gp.category, '→ 기본값 사용:', categoryKorean)
+  }
 
   // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
   let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
   if (!image || image.trim() === '') {
     // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
-    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+    image = categoryImages[gp.category] || categoryImages['PET']
+    console.log('이미지 없음 → 카테고리 기본 이미지 사용:', image)
   }
 
   const originalPrice = gp.price || 0
