@@ -5,13 +5,25 @@
       <section class="seller-info-section">
         <div class="seller-hero">
           <div class="seller-main">
-            <p class="eyebrow">판매자 센터</p>
-            <h1>{{ seller.name }}</h1>
-            <p class="description">{{ seller.description }}</p>
-            <div class="badges">
-              <span v-for="badge in seller.badges" :key="badge" class="badge">{{ badge }}</span>
+            <div class="seller-header">
+              <div>
+                <p class="eyebrow">판매자 센터</p>
+              </div>
+              <div class="action-buttons">
+                <router-link to="/seller/register/product-register" class="btn btn-primary">
+                  상품 추가
+                </router-link>
+                <router-link to="/group-purchases/create" class="btn btn-outline">
+                  공동 구매 추가
+                </router-link>
+              </div>
             </div>
-            <div class="hero-stats">
+            <!-- <h1>{{ seller.name }}</h1> -->
+            <!-- <p class="description">{{ seller.description }}</p> -->
+            <!-- <div class="badges">
+              <span v-for="badge in seller.badges" :key="badge" class="badge">{{ badge }}</span>
+            </div> -->
+            <!-- <div class="hero-stats">
               <div class="stat">
                 <strong>{{ seller.rating }}</strong>
                 <span>평점</span>
@@ -28,6 +40,32 @@
                 <strong>{{ (seller.responseRate * 100).toFixed(0) }}%</strong>
                 <span>응답률</span>
               </div>
+            </div> -->
+            <div class="seller-info-list">
+              <div class="info-row">
+                <span class="info-label">은행</span>
+                <span class="info-value">{{ getBankName(sellerInfo.bankCode) || '-' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">계좌번호</span>
+                <span class="info-value">{{ sellerInfo.accountNumber || '-' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">예금주</span>
+                <span class="info-value">{{ sellerInfo.accountHolder || '-' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">사업자 등록번호</span>
+                <span class="info-value">{{ sellerInfo.businessRegistrationNumber || '-' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">전화번호</span>
+                <span class="info-value">{{ sellerInfo.phoneNumber || '-' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">이메일</span>
+                <span class="info-value">{{ sellerInfo.email || '-' }}</span>
+              </div>
             </div>
           </div>
           <button class="btn-edit-profile" @click="showEditModal = true">정보 수정</button>
@@ -36,40 +74,28 @@
 
       <!-- 대시보드 그리드 -->
       <section class="dashboard-grid">
-        <!-- 정산 현황 -->
-        <article class="panel">
-          <div class="panel-header">
-            <h2>정산 현황</h2>
-          </div>
-          <div class="settlement-summary">
-            <div class="stat-card">
-              <span class="stat-label">이번 달 매출</span>
-              <span class="stat-value">₩{{ settlement.monthlyRevenue.toLocaleString() }}</span>
-            </div>
-            <div class="stat-card highlight">
-              <span class="stat-label">정산 예정 금액</span>
-              <span class="stat-value">₩{{ settlement.pendingAmount.toLocaleString() }}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">누적 정산 금액</span>
-              <span class="stat-value">₩{{ settlement.totalSettled.toLocaleString() }}</span>
-            </div>
-          </div>
-        </article>
-
         <!-- 정산 내역 -->
-        <article class="panel">
+        <article class="panel wide">
           <div class="panel-header">
             <h2>정산 내역</h2>
-            <button class="btn-dispute" @click="requestSettlementDispute">정산 의의 신청</button>
           </div>
           <div class="settlement-list">
             <div v-for="item in settlement.history" :key="item.id" class="settlement-item">
-              <div class="settlement-info">
-                <span class="settlement-date">{{ item.date }}</span>
-                <span class="settlement-amount">₩{{ item.amount.toLocaleString() }}</span>
+              <div class="settlement-content">
+                <div class="settlement-main">
+                  <div class="settlement-date-group">
+                    <span class="settlement-date-label">정산일</span>
+                    <span class="settlement-date">{{ item.date }}</span>
+                  </div>
+                  <div class="settlement-amount-group">
+                    <span class="settlement-amount-label">정산 금액</span>
+                    <span class="settlement-amount">₩{{ (item.amount || 0).toLocaleString() }}</span>
+                  </div>
+                </div>
+                <div class="settlement-status-wrapper">
+                  <span class="settlement-status" :class="item.status">{{ item.statusText }}</span>
+                </div>
               </div>
-              <span class="settlement-status" :class="item.status">{{ item.statusText }}</span>
             </div>
             <div v-if="settlement.history.length === 0" class="empty-state">
               <p>정산 내역이 없습니다</p>
@@ -78,7 +104,7 @@
         </article>
 
         <!-- 판매 통계 -->
-        <article class="panel wide">
+        <!-- <article class="panel wide">
           <div class="panel-header">
             <h2>판매 통계</h2>
           </div>
@@ -104,7 +130,7 @@
               <span class="stat-number">{{ sellerStats.satisfaction }}%</span>
             </div>
           </div>
-        </article>
+        </article> -->
 
         <!-- 내 상품 목록 -->
         <article class="panel wide">
@@ -197,38 +223,48 @@
           </div>
         </article>
 
-        <!-- 주문 목록 (공동 구매별) -->
+        <!-- 주문 목록 -->
         <article class="panel wide">
           <div class="panel-header">
             <h2>주문 목록</h2>
-            <span class="subtitle">공동 구매별 주문 현황</span>
           </div>
-          <div class="order-list">
-            <div v-for="order in orderList" :key="order.id" class="order-item">
+          <div v-if="loadingOrders" class="loading-state">
+            <p>주문 내역을 불러오는 중...</p>
+          </div>
+          <div v-else-if="orderList.length === 0" class="empty-state">
+            <p>주문 내역이 없습니다</p>
+          </div>
+          <div v-else class="order-list">
+            <div v-for="order in orderList" :key="order.orderId" class="order-item">
               <div class="order-header">
                 <div>
-                  <span class="order-date">{{ order.date }}</span>
-                  <span class="order-number">주문번호: {{ order.orderNumber }}</span>
+                  <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                  <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
                 </div>
-                <span class="order-status" :class="order.status">{{ order.statusText }}</span>
+                <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
               </div>
-              <div class="order-content">
-                <div class="order-product-info">
-                  <img :src="order.productImage" :alt="order.productTitle" />
-                  <div>
-                    <h4>{{ order.productTitle }}</h4>
-                    <p class="product-option">{{ order.option }}</p>
-                    <p class="order-meta">수량: {{ order.quantity }}개</p>
+              <div v-if="order.products && order.products.length > 0" class="order-products">
+                <div v-for="product in order.products" :key="product.id" class="order-product">
+                  <div class="product-details">
+                    <h4>{{ product.title }}</h4>
+                    <p class="product-option">{{ product.option }}</p>
+                    <div class="product-meta">
+                      <span>수량: {{ product.quantity }}개</span>
+                      <span class="product-price">₩{{ product.price.toLocaleString() }}</span>
+                    </div>
                   </div>
                 </div>
-                <div class="order-amount">
-                  <span class="amount-label">주문 금액</span>
-                  <span class="amount-value">₩{{ order.totalAmount.toLocaleString() }}</span>
+              </div>
+              <div v-else class="order-summary">
+                <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                <p class="order-price">단가: ₩{{ (order.price||0).toLocaleString() || '-' }}</p>
+              </div>
+              <div class="order-footer">
+                <span class="order-total">총 결제금액: ₩{{ (order.totalAmount||0).toLocaleString() }}</span>
+                <div class="order-actions">
+                  <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
                 </div>
               </div>
-            </div>
-            <div v-if="orderList.length === 0" class="empty-state">
-              <p>주문 내역이 없습니다</p>
             </div>
           </div>
         </article>
@@ -279,7 +315,7 @@
           <button class="close-btn" @click="showEditModal = false">✕</button>
         </div>
         <form @submit.prevent="saveSellerInfo" class="edit-form">
-          <div class="form-section">
+          <!-- <div class="form-section">
             <h3>상점 정보</h3>
             <div class="form-group">
               <label>상점명 *</label>
@@ -293,7 +329,7 @@
               <label>배지 (쉼표로 구분)</label>
               <input v-model="badgesInput" type="text" placeholder="예: 프리미엄 셀러, 24시간 상담" />
             </div>
-          </div>
+          </div> -->
 
           <div class="form-section">
             <h3>사업자 정보</h3>
@@ -376,12 +412,26 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
+import { authAPI } from '@/api/auth'
 import { productApi, groupPurchaseApi } from '@/api/axios'
 
 const router = useRouter()
 
 const seller = ref({ ...sellerProfile })
 const sellerProducts = ref([])
+const loadingProducts = ref(false)
+const groupPurchaseList = ref([])
+const loadingGroupPurchases = ref(false)
+const showEditModal = ref(false)
+
+const sellerInfo = ref({
+  bankCode: '',
+  accountNumber: '',
+  accountHolder: '',
+  businessRegistrationNumber: '',
+  phoneNumber: '',
+  email: ''
+})
 const sellerGroupPurchases = ref([])
 const showEditModal = ref(false)
 const loading = ref(false)
@@ -465,54 +515,18 @@ const settlement = ref({
   ]
 })
 
-const sellerStats = ref({
-  totalSales: 3245,
-  activeProducts: 8,
-  averageRating: 4.9,
-  satisfaction: 98
-})
+// const sellerStats = ref({
+//   totalSales: 3245,
+//   activeProducts: 8,
+//   averageRating: 4.9,
+//   satisfaction: 98
+// })
 
 const notices = ref([...sellerNotices])
 const qna = ref([...sellerQna])
 
-const orderList = ref([
-  {
-    id: 1,
-    orderNumber: 'ORD-2025-001',
-    date: '2025-12-15',
-    status: 'completed',
-    statusText: '주문 완료',
-    productTitle: '아이폰 15 Pro Max 256GB',
-    productImage: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
-    option: '네이비 티타늄 / 256GB',
-    quantity: 1,
-    totalAmount: 1190000
-  },
-  {
-    id: 2,
-    orderNumber: 'ORD-2025-002',
-    date: '2025-12-10',
-    status: 'shipping',
-    statusText: '배송 중',
-    productTitle: '나이키 에어맥스 운동화',
-    productImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-    option: '270 / 블랙',
-    quantity: 2,
-    totalAmount: 198000
-  },
-  {
-    id: 3,
-    orderNumber: 'ORD-2025-003',
-    date: '2025-12-05',
-    status: 'pending',
-    statusText: '주문 대기',
-    productTitle: '프리미엄 한우 세트 (1kg)',
-    productImage: 'https://images.unsplash.com/photo-1603048297172-c92544798d5a?w=400',
-    option: '기본 구성',
-    quantity: 1,
-    totalAmount: 59000
-  }
-])
+const orderList = ref([])
+const loadingOrders = ref(false)
 
 // 계좌번호 유효성 검사
 const validateAccountNumber = () => {
@@ -583,6 +597,51 @@ const formatBusinessNumber = () => {
   }
 }
 
+// 은행 코드를 은행 이름으로 변환
+const getBankName = (bankCode) => {
+  if (!bankCode) return ''
+  const bank = bankList.find(b => b.code === bankCode)
+  return bank ? bank.name : bankCode
+}
+
+// 날짜 포맷팅
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  } catch (e) {
+    return dateString
+  }
+}
+
+// 주문 ID 포맷팅 (UUID를 짧게)
+// const formatOrderId = (orderId) => {
+//   if (!orderId) return '-'
+//   // UUID의 첫 8자리만 표시
+//   return orderId.toString().substring(0, 8).toUpperCase()
+// }
+
+// 주문 상태 텍스트 변환
+const getStatusText = (status) => {
+  const statusMap = {
+    'PENDING': '대기중',
+    'IN_PROGRESS': '진행중',
+    'COMPLETED': '완료',
+    'SUCCESS': '성공',
+    'FAILED': '실패',
+    'SHIPPING': '배송중',
+    'DELIVERED': '배송완료',
+    'CANCELLED': '취소됨',
+    'REFUNDED': '환불완료'
+  }
+  return statusMap[status] || status || '-'
+}
+
 const isEditFormValid = computed(() => {
   return (
     editForm.value.name &&
@@ -605,23 +664,72 @@ const isEditFormValid = computed(() => {
   )
 })
 
-const loadSellerInfo = () => {
+const loadSellerInfo = async () => {
+  // memberId 가져오기
+  const memberId = localStorage.getItem('member_id')
+  
+  if (!memberId) {
+    console.error('memberId가 없습니다.')
+    return
+  }
+  
+  try {
+    // 백엔드 API에서 판매자 정보 가져오기
+    const response = await authAPI.getSellerInfo(memberId)
+    console.log('판매자 정보:', response)
+    
+    const sellerData = response.data || response
+    
+    if (sellerData) {
+      // 판매자 정보 표시용 데이터 설정
+      sellerInfo.value = {
+        bankCode: sellerData.bankCode || '',
+        accountNumber: sellerData.accountNumber || '',
+        accountHolder: sellerData.accountHolder || '',
+        businessRegistrationNumber: sellerData.businessRegistrationNumber || '',
+        phoneNumber: sellerData.phoneNumber || '',
+        email: sellerData.email || ''
+      }
+      
+      // 수정 폼에도 데이터 설정
+      editForm.value = {
+        name: seller.value.name,
+        description: seller.value.description,
+        businessRegistrationNumber: sellerData.businessRegistrationNumber || '',
+        bankCode: sellerData.bankCode || '',
+        accountNumber: sellerData.accountNumber || '',
+        accountHolder: sellerData.accountHolder || ''
+      }
+    }
+  } catch (error) {
+    console.error('판매자 정보 조회 실패:', error)
+    // 에러 발생 시 localStorage에서 불러오기
+    const savedAccountInfo = JSON.parse(localStorage.getItem('seller_account_info') || 'null')
+    
+    sellerInfo.value = {
+      bankCode: savedAccountInfo?.bankCode || '',
+      accountNumber: savedAccountInfo?.accountNumber || '',
+      accountHolder: savedAccountInfo?.accountHolder || '',
+      businessRegistrationNumber: savedAccountInfo?.businessRegistrationNumber || '',
+      phoneNumber: localStorage.getItem('user_phone') || '',
+      email: localStorage.getItem('user_email') || ''
+    }
+    
+    editForm.value = {
+      name: seller.value.name,
+      description: seller.value.description,
+      businessRegistrationNumber: savedAccountInfo?.businessRegistrationNumber || '',
+      bankCode: savedAccountInfo?.bankCode || '',
+      accountNumber: savedAccountInfo?.accountNumber || '',
+      accountHolder: savedAccountInfo?.accountHolder || ''
+    }
+  }
+  
   const savedSeller = JSON.parse(localStorage.getItem('seller_profile') || 'null')
   if (savedSeller) {
     seller.value = { ...seller.value, ...savedSeller }
   }
   
-  // 저장된 계좌 정보 불러오기
-  const savedAccountInfo = JSON.parse(localStorage.getItem('seller_account_info') || 'null')
-  
-  editForm.value = {
-    name: seller.value.name,
-    description: seller.value.description,
-    businessRegistrationNumber: savedAccountInfo?.businessRegistrationNumber || '',
-    bankCode: savedAccountInfo?.bankCode || '',
-    accountNumber: savedAccountInfo?.accountNumber || '',
-    accountHolder: savedAccountInfo?.accountHolder || ''
-  }
   badgesInput.value = seller.value.badges ? seller.value.badges.join(', ') : ''
 }
 
@@ -665,14 +773,133 @@ const saveSellerInfo = async () => {
   showEditModal.value = false
 }
 
-const requestSettlementDispute = () => {
-  if (confirm('정산 의의를 신청하시겠습니까?')) {
-    alert('정산 의의 신청이 접수되었습니다. 검토 후 연락드리겠습니다.')
+// const requestSettlementDispute = () => {
+//   if (confirm('정산 의의를 신청하시겠습니까?')) {
+//     alert('정산 의의 신청이 접수되었습니다. 검토 후 연락드리겠습니다.')
+//   }
+// }
+
+const goToProduct = (id) => {
+  router.push({ name: 'product-update', params: { productId: id } })
+}
+
+const goToGroupPurchase = (id) => {
+  router.push({ name: 'group-purchase-detail', params: { id } })
+}
+
+// 공동 구매 상태 텍스트 변환
+const getPurchaseStatusText = (status) => {
+  if (!status) return '-'
+  
+  const statusMap = {
+    'PENDING': '대기중',
+    'IN_PROGRESS': '진행중',
+    'COMPLETED': '완료',
+    'CANCELLED': '취소됨',
+    'pending': '대기중',
+    'in_progress': '진행중',
+    'completed': '완료',
+    'cancelled': '취소됨'
+  }
+  
+  return statusMap[status] || status
+}
+
+// 공동 구매 상태 클래스
+const getPurchaseStatusClass = (status) => {
+  if (!status) return ''
+  
+  const statusLower = status.toLowerCase()
+  if (statusLower === 'in_progress' || statusLower === 'in-progress') {
+    return 'status-in-progress'
+  } else if (statusLower === 'completed') {
+    return 'status-completed'
+  } else if (statusLower === 'cancelled') {
+    return 'status-cancelled'
+  } else if (statusLower === 'pending') {
+    return 'status-pending'
+  }
+  return ''
+}
+
+const viewOrderDetail = (orderId) => {
+  alert(`주문 상세 정보를 확인합니다. (주문 ID: ${orderId})`)
+  // TODO: 주문 상세 페이지로 이동
+}
+
+// 주문 내역 불러오기
+const loadOrders = async () => {
+  loadingOrders.value = true
+  try {
+    const response = await authAPI.getSellerOrders()
+    console.log('판매자 주문 내역:', response)
+    
+    const ordersData = response.data || response
+    
+    if (Array.isArray(ordersData)) {
+      orderList.value = ordersData
+    } else if (ordersData && Array.isArray(ordersData.content)) {
+      // Pageable 객체인 경우
+      orderList.value = ordersData.content
+    } else {
+      orderList.value = []
+    }
+  } catch (error) {
+    console.error('주문 내역 조회 실패:', error)
+    orderList.value = []
+  } finally {
+    loadingOrders.value = false
   }
 }
 
-const goToProduct = (id) => {
-  router.push({ name: 'product-detail', params: { id } })
+// 내 상품 목록 불러오기
+const loadProducts = async () => {
+  loadingProducts.value = true
+  try {
+    const response = await authAPI.getMyProducts()
+    console.log('내 상품 목록:', response)
+    
+    const productsData = response.data || response
+    
+    if (Array.isArray(productsData)) {
+      sellerProducts.value = productsData
+    } else if (productsData && Array.isArray(productsData.content)) {
+      // Pageable 객체인 경우
+      sellerProducts.value = productsData.content
+    } else {
+      sellerProducts.value = []
+    }
+  } catch (error) {
+    console.error('상품 목록 조회 실패:', error)
+    sellerProducts.value = []
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+// 공동 구매 목록 불러오기
+const loadGroupPurchases = async () => {
+  loadingGroupPurchases.value = true
+  try {
+    const response = await authAPI.getGroupPurchases()
+    console.log('공동 구매 목록:', response)
+    
+    const purchasesData = response.data || response
+    
+    if (Array.isArray(purchasesData)) {
+      groupPurchaseList.value = purchasesData
+    } else if (purchasesData && Array.isArray(purchasesData.content)) {
+      // Pageable 객체인 경우
+      groupPurchaseList.value = purchasesData.content
+    } else {
+      groupPurchaseList.value = []
+    }
+  } catch (error) {
+    console.error('공동 구매 목록 조회 실패:', error)
+    groupPurchaseList.value = []
+  } finally {
+    loadingGroupPurchases.value = false
+  }
 }
 
 // 카테고리 한글 변환
@@ -829,6 +1056,9 @@ onMounted(() => {
   loadSellerInfo()
   fetchMyProducts()
   fetchMyGroupPurchases()
+  loadProducts()
+  loadOrders()
+  loadGroupPurchases()
 })
 </script>
 
@@ -862,8 +1092,22 @@ onMounted(() => {
   gap: 32px;
 }
 
+.seller-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
 .seller-main {
   flex: 1;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .eyebrow {
@@ -958,6 +1202,42 @@ onMounted(() => {
   background: #f0f0f0;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
+}
+
+.seller-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-label {
+  font-size: 14px;
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 15px;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* 대시보드 그리드 */
@@ -1107,36 +1387,65 @@ onMounted(() => {
 }
 
 .settlement-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
   background: #0f0f0f;
   border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  border-radius: 16px;
+  padding: 24px;
   transition: all 0.2s;
 }
 
 .settlement-item:hover {
   border-color: #3a3a3a;
   background: #151515;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
-.settlement-info {
+.settlement-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.settlement-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.settlement-date-group,
+.settlement-amount-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+}
+
+.settlement-date-label,
+.settlement-amount-label {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .settlement-date {
-  font-size: 13px;
-  color: #999;
+  font-size: 15px;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .settlement-amount {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: #ffffff;
+}
+
+.settlement-status-wrapper {
+  display: flex;
+  align-items: center;
 }
 
 .settlement-status {
@@ -1225,11 +1534,10 @@ onMounted(() => {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
-.product-card img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 12px;
+.updated-date {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
 }
 
 .product-info {
@@ -1353,6 +1661,47 @@ onMounted(() => {
   color: #ffffff;
 }
 
+.item-date {
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.status-in-progress {
+  background: rgba(116, 192, 252, 0.2);
+  color: #74c0fc;
+  border: 1px solid #74c0fc;
+}
+
+.status-badge.status-completed {
+  background: rgba(81, 207, 102, 0.2);
+  color: #51cf66;
+  border: 1px solid #51cf66;
+}
+
+.status-badge.status-cancelled {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  border: 1px solid #ff4757;
+}
+
+.status-badge.status-pending {
+  background: rgba(255, 212, 59, 0.2);
+  color: #ffd43b;
+  border: 1px solid #ffd43b;
+}
+
 /* 주문 목록 */
 .order-list {
   display: flex;
@@ -1418,61 +1767,108 @@ onMounted(() => {
   border: 1px solid #ffd43b;
 }
 
-.order-content {
+.order-status.in_progress {
+  background: rgba(116, 192, 252, 0.2);
+  color: #74c0fc;
+  border: 1px solid #74c0fc;
+}
+
+.order-status.success {
+  background: rgba(81, 207, 102, 0.2);
+  color: #51cf66;
+  border: 1px solid #51cf66;
+}
+
+.order-status.failed {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  border: 1px solid #ff4757;
+}
+
+.order-products {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.order-product-info {
+.order-product {
   display: flex;
-  gap: 16px;
-  flex: 1;
+  gap: 12px;
 }
 
-.order-product-info img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 12px;
-}
-
-.order-product-info h4 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 6px;
-}
-
-.product-option {
-  font-size: 13px;
-  color: #999;
-  margin: 0 0 6px;
-}
-
-.order-meta {
-  font-size: 13px;
-  color: #999;
-  margin: 0;
-}
-
-.order-amount {
+.order-summary {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #0f0f0f;
+  border-radius: 8px;
 }
 
-.amount-label {
+.order-quantity,
+.order-price {
+  margin: 0;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: right;
+}
+
+.product-details {
+  flex: 1;
+}
+
+.product-details h4 {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.product-option {
+  color: #999;
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+
+.product-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 13px;
   color: #999;
 }
 
-.amount-value {
-  font-size: 22px;
+.product-price {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #2a2a2a;
+  margin-top: 12px;
+}
+
+.order-total {
+  font-size: 18px;
   font-weight: 700;
   color: #ffffff;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 13px;
 }
 
 /* 고객 문의 */
@@ -1594,6 +1990,7 @@ onMounted(() => {
 }
 
 /* 빈 상태 */
+.loading-state,
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -1604,6 +2001,10 @@ onMounted(() => {
   margin: 0 0 16px;
   color: #999;
 }
+
+.loading-state p {
+  margin: 0;
+  color: #999;
 
 /* 로딩 상태 */
 .loading-state {
@@ -1843,6 +2244,20 @@ onMounted(() => {
     flex-direction: column;
   }
   
+  .seller-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+  }
+  
   .hero-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1900,3 +2315,4 @@ onMounted(() => {
   }
 }
 </style>
+

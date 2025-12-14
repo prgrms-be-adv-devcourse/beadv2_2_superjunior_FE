@@ -150,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, defineProps } from 'vue'
 import { useRouter } from 'vue-router'
 import { sellerNotices, sellerQna } from '@/data/products'
 import api from '@/api/axios'

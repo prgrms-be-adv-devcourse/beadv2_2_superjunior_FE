@@ -90,6 +90,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { v4  as uuidv4 } from 'uuid';
 import api from '@/api/axios'
 // import { useRouter } from 'vue-router'
 
@@ -176,11 +177,11 @@ const requestCharge = async () => {
 
   try {
     // 1. 서버에 충전 요청 생성 (orderId와 함께)
-    const orderId = crypto.randomUUID()
+    const orderId = uuidv4();
     const orderName = `포인트 ${selectedAmount.value.toLocaleString()}원 충전`
 
     // 백엔드 API 호출하여 주문 정보 저장
-    const response = await api.post('/api/points/create', {
+    const response = await api.post('/payments/create', {
       orderId: orderId,
       amount: selectedAmount.value
     })

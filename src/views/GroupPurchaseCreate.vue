@@ -39,13 +39,14 @@
               <option value="">상품을 선택하세요</option>
               <option
                 v-for="product in products"
-                :key="product.id"
-                :value="product.id"
+                :key="product.productId"
+                :value="product.productId"
               >
-                {{ product.name }} (재고: {{ product.stock }})
+                {{ product.name }} - ₩{{ (product.price || 0).toLocaleString() }}
               </option>
             </select>
-            <p v-if="!products.length" class="form-hint">등록된 상품이 없습니다. 먼저 상품을 등록해주세요.</p>
+            <p v-if="loadingProducts" class="form-hint">상품 목록을 불러오는 중...</p>
+            <p v-else-if="!products.length" class="form-hint">등록된 상품이 없습니다. 먼저 상품을 등록해주세요.</p>
           </div>
           <div v-if="selectedProduct" class="selected-product-info">
             <div class="info-row">
@@ -119,18 +120,92 @@
               <input
                 id="startDate"
                 v-model="form.startDate"
-                type="datetime-local"
+                type="date"
                 required
+                :min="minDateStr"
+                class="date-input"
               />
             </div>
+            <div class="form-group">
+              <label for="startTime">시작 시간 *</label>
+              <div class="time-input-group">
+                <select
+                  id="startTimePeriod"
+                  v-model="form.startTimePeriod"
+                  required
+                  class="time-period-select"
+                >
+                  <option value="AM">오전</option>
+                  <option value="PM">오후</option>
+                </select>
+                <select
+                  id="startTime"
+                  v-model="form.startTime"
+                  required
+                  class="time-input"
+                >
+                  <option value="00:00">00:00</option>
+                  <option value="01:00">01:00</option>
+                  <option value="02:00">02:00</option>
+                  <option value="03:00">03:00</option>
+                  <option value="04:00">04:00</option>
+                  <option value="05:00">05:00</option>
+                  <option value="06:00">06:00</option>
+                  <option value="07:00">07:00</option>
+                  <option value="08:00">08:00</option>
+                  <option value="09:00">09:00</option>
+                  <option value="10:00">10:00</option>
+                  <option value="11:00">11:00</option>
+                  <option value="12:00">12:00</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
             <div class="form-group">
               <label for="endDate">종료일 *</label>
               <input
                 id="endDate"
                 v-model="form.endDate"
-                type="datetime-local"
+                type="date"
                 required
+                :min="endDateMinStr"
+                class="date-input"
               />
+            </div>
+            <div class="form-group">
+              <label for="endTime">종료 시간 *</label>
+              <div class="time-input-group">
+                <select
+                  id="endTimePeriod"
+                  v-model="form.endTimePeriod"
+                  required
+                  class="time-period-select"
+                >
+                  <option value="AM">오전</option>
+                  <option value="PM">오후</option>
+                </select>
+                <select
+                  id="endTime"
+                  v-model="form.endTime"
+                  required
+                  class="time-input"
+                >
+                  <option value="00:00">00:00</option>
+                  <option value="01:00">01:00</option>
+                  <option value="02:00">02:00</option>
+                  <option value="03:00">03:00</option>
+                  <option value="04:00">04:00</option>
+                  <option value="05:00">05:00</option>
+                  <option value="06:00">06:00</option>
+                  <option value="07:00">07:00</option>
+                  <option value="08:00">08:00</option>
+                  <option value="09:00">09:00</option>
+                  <option value="10:00">10:00</option>
+                  <option value="11:00">11:00</option>
+                  <option value="12:00">12:00</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -149,9 +224,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { groupPurchaseApi, productApi } from '@/api/axios'
+import { groupPurchaseApi } from '@/api/axios'
+import { authAPI } from '@/api/auth'
 
 const router = useRouter()
+
+// 오늘 날짜를 Date 객체로 반환
+const getTodayDate = () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return today
+}
 
 const form = ref({
   title: '',
@@ -160,12 +243,18 @@ const form = ref({
   minQuantity: null,
   maxQuantity: null,
   discountedPrice: null,
-  startDate: '',
-  endDate: ''
+  startDate: getTodayDate(),
+  startTime: '00:00',
+  startTimePeriod: 'AM',
+  endDate: getTodayDate(),
+  endTime: '00:00',
+  endTimePeriod: 'AM'
 })
+
 
 const products = ref([])
 const loading = ref(false)
+const loadingProducts = ref(false)
 
 const isFormValid = computed(() => {
   return (
@@ -175,7 +264,11 @@ const isFormValid = computed(() => {
     form.value.maxQuantity &&
     form.value.discountedPrice !== null &&
     form.value.startDate &&
+    form.value.startTime &&
+    form.value.startTimePeriod &&
     form.value.endDate &&
+    form.value.endTime &&
+    form.value.endTimePeriod &&
     form.value.minQuantity <= form.value.maxQuantity
   )
 })
@@ -192,10 +285,34 @@ const handleCancel = () => {
   }
 }
 
-// datetime-local을 ISO 8601 (OffsetDateTime) 형식으로 변환
-const convertToOffsetDateTime = (datetimeLocal) => {
-  if (!datetimeLocal) return null
-  const date = new Date(datetimeLocal)
+
+// 오전/오후와 시간을 합쳐서 24시간 형식으로 변환
+const convertTo24Hour = (timeStr, period) => {
+  if (!timeStr) return '00:00'
+  
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  let hour24 = hours
+  
+  if (period === 'PM' && hours !== 12) {
+    hour24 = hours + 12
+  } else if (period === 'AM' && hours === 12) {
+    hour24 = 0
+  }
+  
+  return `${String(hour24).padStart(2, '0')}:${String(minutes || 0).padStart(2, '0')}`
+}
+
+// date와 time을 합쳐서 ISO 8601 (OffsetDateTime) 형식으로 변환
+const convertToOffsetDateTime = (dateStr, timeStr, period) => {
+  if (!dateStr || !timeStr) return null
+  
+  // 오전/오후를 24시간 형식으로 변환
+  const time24 = convertTo24Hour(timeStr, period)
+  
+  // date와 time을 합쳐서 Date 객체 생성
+  const dateTimeStr = `${dateStr}T${time24}:00`
+  const date = new Date(dateTimeStr)
+  
   // ISO 8601 형식으로 변환 (예: 2025-12-15T00:00:00+09:00)
   const offset = -date.getTimezoneOffset()
   const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0')
@@ -223,18 +340,22 @@ const handleSubmit = async () => {
     return
   }
 
-  // 시작일이 현재보다 과거인지 확인
-  const startDate = new Date(form.value.startDate)
+  // 시작일과 시간을 합쳐서 Date 객체 생성
+  const startTime24 = convertTo24Hour(form.value.startTime, form.value.startTimePeriod)
+  const startDateTimeStr = `${form.value.startDate}T${startTime24}:00`
+  const startDate = new Date(startDateTimeStr)
   const now = new Date()
   if (startDate < now) {
-    alert('시작일은 현재 또는 미래여야 합니다.')
+    alert('시작일시는 현재 또는 미래여야 합니다.')
     return
   }
 
-  // 종료일이 시작일보다 늦은지 확인
-  const endDate = new Date(form.value.endDate)
+  // 종료일과 시간을 합쳐서 Date 객체 생성
+  const endTime24 = convertTo24Hour(form.value.endTime, form.value.endTimePeriod)
+  const endDateTimeStr = `${form.value.endDate}T${endTime24}:00`
+  const endDate = new Date(endDateTimeStr)
   if (endDate <= startDate) {
-    alert('종료일은 시작일보다 늦어야 합니다.')
+    alert('종료일시는 시작일시보다 늦어야 합니다.')
     return
   }
 
@@ -247,8 +368,8 @@ const handleSubmit = async () => {
       title: form.value.title,
       description: form.value.description || null,
       discountedPrice: form.value.discountedPrice,
-      startDate: convertToOffsetDateTime(form.value.startDate),
-      endDate: convertToOffsetDateTime(form.value.endDate),
+      startDate: convertToOffsetDateTime(form.value.startDate, form.value.startTime, form.value.startTimePeriod),
+      endDate: convertToOffsetDateTime(form.value.endDate, form.value.endTime, form.value.endTimePeriod),
       productId: form.value.productId
     }
 
@@ -271,6 +392,7 @@ const handleSubmit = async () => {
 
 // 판매자의 상품 목록 가져오기
 const fetchProducts = async () => {
+  loadingProducts.value = true
   try {
     // 내 상품 목록 조회 API 호출 (판매자 전용)
     const response = await productApi.getMyProducts()
@@ -299,6 +421,9 @@ const fetchProducts = async () => {
     const errorMessage = error.response?.data?.message || '상품 목록을 불러오는데 실패했습니다.'
     alert(errorMessage)
     products.value = []
+    alert('상품 목록을 불러오는데 실패했습니다.')
+  } finally {
+    loadingProducts.value = false
   }
 }
 
@@ -405,6 +530,11 @@ onMounted(() => {
   transition: border-color 0.2s;
 }
 
+/* v-calendar DatePicker 스타일 */
+.date-input {
+  width: 100%;
+}
+
 .form-group input::placeholder,
 .form-group textarea::placeholder {
   color: #666;
@@ -420,6 +550,48 @@ onMounted(() => {
 
 .form-group select {
   cursor: pointer;
+}
+
+.time-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.time-period-select {
+  padding: 14px 16px;
+  background: #0f0f0f;
+  border: 2px solid #2a2a2a;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #ffffff;
+  transition: border-color 0.2s;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.time-period-select:focus {
+  outline: none;
+  border-color: #ffffff;
+  background: #151515;
+}
+
+.time-input {
+  flex: 1;
+  padding: 14px 16px;
+  background: #0f0f0f;
+  border: 2px solid #2a2a2a;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #ffffff;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.time-input:focus {
+  outline: none;
+  border-color: #ffffff;
+  background: #151515;
 }
 
 .form-hint {

@@ -45,9 +45,14 @@ export const authAPI = {
     },
     // 주소 목록 조회
     getAddresses: async(page = 0, size = 10) => {
-        const response = await api.get(`/members/address`, {
+        const response = await api.get(`/members/addresses`, {
             params: { page, size }
         })
+        return response.data;
+    },
+    // 주소 추가
+    addAddress: async(addressData) => {
+        const response = await api.post(`/members/address`, addressData)
         return response.data;
     },
     // 주소 수정
@@ -63,6 +68,31 @@ export const authAPI = {
             accountHolder: sellerData.accountHolder,
             businessRegistrationNumber: sellerData.businessRegistrationNumber
         })
+        return response.data;
+    },
+    // 주문 내역 조회
+    getOrders: async() => {
+        const response = await api.get(`/orders/consumer`)
+        return response.data;
+    },
+    // 판매자 정보 조회
+    getSellerInfo: async(sellerId) => {
+        const response = await api.get(`/members/seller/${sellerId}`)
+        return response.data;
+    },
+    // 내 상품 목록 조회
+    getMyProducts: async() => {
+        const response = await api.get(`/products`)
+        return response.data;
+    },
+    // 판매자 주문 내역 조회
+    getSellerOrders: async() => {
+        const response = await api.get(`/orders/seller`)
+        return response.data;
+    },
+    // 공동 구매 목록 조회
+    getGroupPurchases: async() => {
+        const response = await api.get(`/purchases`)
         return response.data;
     }
 }

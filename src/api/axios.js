@@ -7,7 +7,7 @@ const BASE_URL = "/api";  // 프록시를 통해 요청
 // 단일 Axios 인스턴스
 export const api = axios.create({
     baseURL: BASE_URL,
-    timeout: 10000,
+    timeout: 30000,  // 30초로 증가 (디버깅용)
     withCredentials: true, // 🔥 Cookie 자동 송수신 - Gateway가 accessToken 쿠키를 읽고 헤더 추가
     headers: {
         "Content-Type": "application/json",

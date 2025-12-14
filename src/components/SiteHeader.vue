@@ -2,7 +2,7 @@
   <header class="site-header">
     <div class="container">
       <div class="brand" @click="router.push('/')">
-        <span class="brand-icon">🛒</span>
+        <img src="/favicon-design2.svg" alt="0909 공구공구" class="brand-icon" />
         <span class="brand-text">0909 공구공구</span>
       </div>
       <nav class="nav">
@@ -156,7 +156,14 @@ onBeforeUnmount(() => {
 }
 
 .brand-icon {
-  font-size: 28px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+
+.brand:hover .brand-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .brand-text {

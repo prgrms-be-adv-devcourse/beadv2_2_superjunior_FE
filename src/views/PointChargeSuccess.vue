@@ -61,11 +61,14 @@ onMounted(async () => {
     chargeAmount.value = parseInt(amount) || 0
 
     // 백엔드 API 호출하여 결제 승인 (GET 요청, 쿼리 파라미터로 전달)
-    const response = await api.get('/api/points/confirm', {
+    const response = await api.get('/payments/confirm', {
       params: {
         paymentKey: paymentKey,
         orderId: orderIdParam,
         amount: amount
+      },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`
       }
     })
 
