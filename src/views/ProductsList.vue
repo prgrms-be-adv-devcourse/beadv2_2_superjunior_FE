@@ -5,20 +5,10 @@
       <div class="container">
         <div>
           <p class="eyebrow">공동구매 마켓</p>
-          <h1>공동구매 상품 목록</h1>
+          <h1>공동구매 상품</h1>
           <p class="subtitle">
-            진행 상태별로 공동구매 상품을 확인할 수 있습니다.
+            진행 상태와 카테고리별로 공동구매 상품을 확인하세요.
           </p>
-        </div>
-        <div class="stats">
-          <div class="stat">
-            <strong>{{ filteredProducts.length }}</strong>
-            <span>상품 수</span>
-          </div>
-          <div class="stat">
-            <strong>{{ participantsCount.toLocaleString() }}명</strong>
-            <span>참여 중</span>
-          </div>
         </div>
       </div>
     </section>
@@ -26,8 +16,9 @@
     <!-- FILTER -->
     <section class="filters">
       <div class="container">
+
+        <!-- STATUS -->
         <div class="filter-row">
-          <!-- STATUS TABS -->
           <div class="chips">
             <button
               v-for="section in primarySections"
@@ -40,7 +31,6 @@
             </button>
           </div>
 
-          <!-- SEARCH + CATEGORY -->
           <div class="filter-actions">
             <div class="search">
               <input
@@ -51,43 +41,52 @@
               />
               <button class="btn btn-outline" @click="search">검색</button>
             </div>
-
-            <div class="category-select">
-              <label>
-                카테고리
-                <select v-model="selectedCategory">
-                  <option value="">전체</option>
-                  <option
-                    v-for="category in categories"
-                    :key="category.value"
-                    :value="category.value"
-                  >
-                    {{ category.icon }} {{ category.label }}
-                  </option>
-                </select>
-              </label>
-            </div>
           </div>
         </div>
+
+        <!-- CATEGORY (더보기) -->
+        <div class="filter-row secondary">
+          <div class="chips" :class="{ expanded: showAllCategories }">
+            <button
+              v-for="category in visibleCategories"
+              :key="category.value"
+              class="chip"
+              :class="{ active: selectedCategory === category.value }"
+              @click="selectCategory(category.value)"
+            >
+              {{ category.icon }} {{ category.label }}
+            </button>
+
+            <button
+              v-if="hiddenCategories.length > 0"
+              class="chip"
+              @click="toggleMoreCategories"
+            >
+              {{ showAllCategories ? '접기' : '+ 더보기' }}
+            </button>
+          </div>
+        </div>
+
       </div>
     </section>
 
     <!-- GRID -->
     <section class="product-grid-section">
       <div class="container">
-        <div v-if="filteredProducts.length === 0 && !loading" class="empty-state">
+        <div v-if="products.length === 0 && !loading" class="empty-state">
           <p>조건에 맞는 상품이 없습니다.</p>
         </div>
 
         <div v-else class="product-grid">
           <article
-            v-for="product in filteredProducts"
+            v-for="product in products"
             :key="product.id"
             class="product-card"
             @click="goToDetail(product.id)"
           >
             <div class="image-wrapper">
               <img :src="product.image" :alt="product.title" />
+
               <div class="badge-group">
                 <span
                   v-for="badge in product.badges"
@@ -98,7 +97,6 @@
                 </span>
               </div>
 
-              <!-- WISHLIST -->
               <button
                 class="bookmark"
                 :class="{ active: wishlist.has(product.id) }"
@@ -151,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { groupPurchaseApi } from '@/api/axios'
 
@@ -160,27 +158,26 @@ const router = useRouter()
 /* ======================
  * 상태
  * ====================== */
-const sampleProductsList = ref([])
-const filteredProducts = computed(() => sampleProductsList.value)
-
-const keyword = ref('')
-const selectedCategory = ref('')
-const selectedStatus = ref('OPEN')
+const products = ref([])
 const loading = ref(false)
 
+const keyword = ref('')
+const selectedStatus = ref('OPEN')
+const selectedCategory = ref('')
+
 /* ======================
- * 위시리스트 (유지)
+ * 위시리스트
  * ====================== */
 const wishlist = ref(new Set())
 
-const toggleWishlist = (productId) => {
+const toggleWishlist = (id) => {
   const next = new Set(wishlist.value)
-  next.has(productId) ? next.delete(productId) : next.add(productId)
+  next.has(id) ? next.delete(id) : next.add(id)
   wishlist.value = next
 }
 
 /* ======================
- * 상태 탭
+ * STATUS
  * ====================== */
 const primarySections = [
   { id: 'OPEN', label: '진행중' },
@@ -190,31 +187,46 @@ const primarySections = [
 ]
 
 /* ======================
- * 카테고리
+ * CATEGORY (더보기)
  * ====================== */
-const categories = [
-  { value: 'HOME', label: '생활 & 주방', icon: '🏠' },
-  { value: 'FOOD', label: '식품 & 간식', icon: '🍎' },
-  { value: 'HEALTH', label: '건강 & 헬스', icon: '💪' },
+const showAllCategories = ref(false)
+
+const allCategories = [
+  { value: '', label: '전체', icon: '✨' },
+  { value: 'HOME', label: '생활·주방', icon: '🏠' },
+  { value: 'FOOD', label: '식품·간식', icon: '🍎' },
+  { value: 'HEALTH', label: '건강·헬스', icon: '💊' },
   { value: 'BEAUTY', label: '뷰티', icon: '💄' },
-  { value: 'FASHION', label: '패션 & 의류', icon: '👟' },
-  { value: 'ELECTRONICS', label: '전자 & 디지털', icon: '📱' },
-  { value: 'KIDS', label: '유아 & 어린이', icon: '👶' },
-  { value: 'HOBBY', label: '취미', icon: '🎨' },
-  { value: 'PET', label: '반려동물', icon: '🐾' }
+  { value: 'FASHION', label: '패션·의류', icon: '👟' },
+  { value: 'ELECTRONICS', label: '전자·디지털', icon: '📱' },
+  { value: 'KIDS', label: '유아·어린이', icon: '🧸' },
+  { value: 'HOBBY', label: '취미', icon: '🎮' },
+  { value: 'PET', label: '반려동물', icon: '🐶' }
 ]
 
-/* ======================
- * 계산
- * ====================== */
-const participantsCount = computed(() =>
-  sampleProductsList.value.reduce((sum, p) => sum + p.currentCount, 0)
-)
+const visibleCategories = computed(() => {
+  return showAllCategories.value
+    ? allCategories
+    : allCategories.slice(0, 4) // 전체 + 3개
+})
+
+const hiddenCategories = computed(() => {
+  return showAllCategories.value ? [] : allCategories.slice(4)
+})
+
+const toggleMoreCategories = () => {
+  showAllCategories.value = !showAllCategories.value
+}
+
+const selectCategory = (value) => {
+  selectedCategory.value = value
+  loadProducts()
+}
 
 /* ======================
- * 시간 계산
+ * UTIL
  * ====================== */
-const getTimeRemaining = (endDate) => {
+const getTimeLeft = (endDate) => {
   const diff = new Date(endDate) - new Date()
   if (diff <= 0) return '종료됨'
   const h = Math.floor(diff / 36e5)
@@ -223,10 +235,10 @@ const getTimeRemaining = (endDate) => {
 }
 
 /* ======================
- * ES → 카드 변환
+ * TRANSFORM
  * ====================== */
-const transformGroupPurchase = (doc) => {
-  const embedded = doc.productDocumentEmbedded || {}
+const transform = (doc) => {
+  const p = doc.productDocumentEmbedded || {}
   const badges = []
 
   if (doc.discountRate >= 30) badges.push(`${doc.discountRate}% 할인`)
@@ -238,20 +250,20 @@ const transformGroupPurchase = (doc) => {
     id: doc.groupPurchaseId,
     title: doc.title,
     subtitle: doc.description || '',
-    category: embedded.category || '',
-    image: embedded.originalUrl || '',
-    originalPrice: embedded.price || 0,
+    category: p.category || '',
+    image: p.originalUrl || '',
+    originalPrice: p.price || 0,
     currentPrice: doc.discountedPrice || 0,
     discountRate: doc.discountRate || 0,
     currentCount: doc.currentQuantity || 0,
     targetCount: doc.maxQuantity || 1,
-    timeLeft: getTimeRemaining(doc.endDate),
+    timeLeft: getTimeLeft(doc.endDate),
     badges
   }
 }
 
 /* ======================
- * ES 검색
+ * ES SEARCH
  * ====================== */
 const loadProducts = async () => {
   loading.value = true
@@ -264,17 +276,17 @@ const loadProducts = async () => {
     })
 
     const content = res.data?.data?.content ?? []
-    sampleProductsList.value = content.map(transformGroupPurchase)
+    products.value = content.map(transform)
   } catch (e) {
     console.error('공동구매 검색 실패', e)
-    sampleProductsList.value = []
+    products.value = []
   } finally {
     loading.value = false
   }
 }
 
 /* ======================
- * 이벤트
+ * EVENTS
  * ====================== */
 const setStatus = (status) => {
   selectedStatus.value = status
@@ -288,10 +300,9 @@ const goToDetail = (id) => {
 }
 
 /* ======================
- * 라이프사이클
+ * INIT
  * ====================== */
 onMounted(loadProducts)
-watch(selectedCategory, loadProducts)
 </script>
 
 
@@ -398,6 +409,16 @@ watch(selectedCategory, loadProducts)
   border-color: #ffffff;
   color: #0a0a0a;
   background: #ffffff;
+}
+
+.filter-row.secondary {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 더보기 펼쳤을 때 줄바꿈 허용 */
+.chips.expanded {
+  flex-wrap: wrap;
 }
 
 .filter-actions {
