@@ -224,9 +224,19 @@ const loadGroupPurchase = async () => {
 
     // 권한 체크
     const currentUserEmail = localStorage.getItem('user_email')
-    if (data.sellerId !== currentUserEmail) {
+    const currentMemberId = localStorage.getItem('member_id')
+
+    console.log('권한 체크:', {
+      'data.sellerId': data.sellerId,
+      'currentUserEmail': currentUserEmail,
+      'currentMemberId': currentMemberId
+    })
+
+    // sellerId가 member_id 또는 user_email과 일치하지 않으면 권한 없음
+    if (data.sellerId !== currentUserEmail && data.sellerId !== currentMemberId) {
       alert('수정 권한이 없습니다.')
       router.push({ name: 'group-purchase-detail', params: { id: props.id } })
+      return
     }
   } catch (error) {
     console.error('공동구매 조회 실패:', error)

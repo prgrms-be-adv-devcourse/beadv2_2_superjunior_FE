@@ -6,7 +6,11 @@
         <p>등록한 모든 상품을 확인하고 관리할 수 있습니다.</p>
       </div>
 
-      <div v-if="allProducts.length === 0" class="empty-state">
+      <div v-if="loading" class="loading-state">
+        <p>상품 목록을 불러오는 중...</p>
+      </div>
+
+      <div v-else-if="allProducts.length === 0" class="empty-state">
         <p>등록된 상품이 없습니다.</p>
         <router-link to="/seller/register/product-register" class="btn btn-primary">
           상품 등록하기
@@ -33,7 +37,7 @@
             <div class="product-progress">
               <div class="progress-info">
                 <span class="progress-text">
-                  {{ product.currentCount || 0 }} / {{ product.targetCount }}명 참여
+                  재고: {{ product.stock }}개
                 </span>
                 <span class="progress-percent">
                   {{ Math.round(((product.currentCount || 0) / product.targetCount) * 100) }}%
@@ -66,32 +70,83 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { productApi } from '@/api/axios'
-import { getSellerProducts } from '@/data/products'
 
 const router = useRouter()
 
 const allProducts = ref([])
 const loading = ref(false)
 
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
+
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452857297128-d9c29adba80b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+}
+
+// 백엔드 데이터를 프론트엔드 형식으로 변환
+const transformProduct = (product) => {
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = product.imageUrl || product.image || product.thumbnailUrl
+  if (!image || image.trim() === '') {
+    image = categoryImages[product.category] || categoryImages['PET']
+  }
+
+  return {
+    id: product.productId,
+    title: product.name,
+    subtitle: product.description?.substring(0, 50) + '...' || '',
+    currentPrice: product.price,
+    price: product.price,
+    originalPrice: null,
+    category: categoryMap[product.category] || product.category,
+    image: image,
+    stock: product.stock,
+    description: product.description,
+    originalUrl: product.originalLink,
+    // 공동구매 정보는 추후 별도 API로 연동 (임시 값)
+    currentCount: 0,
+    targetCount: 10,
+    rating: 0,
+    reviewCount: 0
+  }
+}
+
 const loadProducts = async () => {
   loading.value = true
   try {
-    // TODO: 실제 API로 상품 목록 조회
-    // const response = await productApi.getProducts()
-    // allProducts.value = response.data.data || []
-    
-    // 임시: localStorage에서 등록한 상품 가져오기
-    const registeredProducts = JSON.parse(localStorage.getItem('seller_products') || '[]')
-    
-    // 기본 샘플 상품 중 판매자 이름이 일치하는 것 가져오기
-    const sellerName = JSON.parse(localStorage.getItem('seller_profile') || '{}').name || '테크샵'
-    const sampleProducts = getSellerProducts(sellerName)
-    
-    // 두 목록 합치기
-    allProducts.value = [...registeredProducts, ...sampleProducts]
+    const response = await productApi.getMyProducts()
+    console.log('내 상품 목록 (전체):', response.data)
+
+    // 백엔드 응답 데이터 변환
+    if (response.data && response.data.data) {
+      allProducts.value = response.data.data.map(transformProduct)
+    } else if (Array.isArray(response.data)) {
+      allProducts.value = response.data.map(transformProduct)
+    }
   } catch (error) {
     console.error('Failed to load products:', error)
-    alert('상품 목록을 불러오는데 실패했습니다.')
+    const errorMessage = error.response?.data?.message || '상품 목록을 불러오는데 실패했습니다.'
+    alert(errorMessage)
+    allProducts.value = []
   } finally {
     loading.value = false
   }
@@ -184,6 +239,27 @@ onMounted(() => {
 .empty-state .btn-primary:hover {
   background: #f0f0f0;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
+.loading-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #a0a0a0;
+  font-size: 16px;
+}
+
+.loading-state p {
+  margin: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .products-grid {

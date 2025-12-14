@@ -24,14 +24,15 @@
               <label for="category">카테고리 *</label>
               <select id="category" v-model="form.category" required>
                 <option value="">카테고리를 선택하세요</option>
-                <option value="ELECTRONICS">전자제품</option>
-                <option value="FASHION">패션</option>
-                <option value="FOOD">식품</option>
+                <option value="HOME">생활 & 주방</option>
+                <option value="FOOD">식품 & 간식</option>
+                <option value="HEALTH">건강 & 헬스</option>
                 <option value="BEAUTY">뷰티</option>
-                <option value="HOME_LIVING">홈/리빙</option>
-                <option value="BOOK">도서</option>
-                <option value="SPORTS">스포츠</option>
-                <option value="OTHER">기타</option>
+                <option value="FASHION">패션 & 의류</option>
+                <option value="ELECTRONICS">전자 & 디지털</option>
+                <option value="KIDS">유아 & 어린이</option>
+                <option value="HOBBY">취미</option>
+                <option value="PET">반려동물</option>
               </select>
             </div>
             <div class="form-group">
@@ -171,12 +172,20 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  // 로그인 체크
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    alert('로그인이 필요합니다.')
+    router.push('/login')
+    return
+  }
+
   // 판매자 권한 체크
-  //const role = localStorage.getItem('user_role')
-  // if (role !== 'seller') {
-  //   alert('판매자만 상품을 등록할 수 있습니다.')
-  //   router.push('/seller/application')
-  // }
+  const role = localStorage.getItem('user_role')
+  if (role !== 'SELLER') {
+    alert('판매자만 상품을 등록할 수 있습니다.')
+    router.push('/seller/application')
+  }
 })
 </script>
 

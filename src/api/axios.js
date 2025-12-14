@@ -56,7 +56,22 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             const currentPath = router.currentRoute.value.fullPath;
 
-            // 이미 로그인 페이지가 아닌 경우에만 리다이렉트
+            // 공개 페이지 목록 (로그인 없이 접근 가능한 페이지)
+            const publicPaths = ['/', '/products', '/group-purchases', '/community', '/login', '/register', '/users'];
+
+            // 현재 경로가 공개 페이지인지 확인
+            const isPublicPage = publicPaths.some(path => {
+                return currentPath === path || currentPath.startsWith(path + '/');
+            });
+
+            // 공개 페이지에서는 401 에러를 무시 (로그인 상태와 관계없이)
+            // 백엔드가 공개 API도 인증을 요구하는 경우가 있어서, 공개 페이지에서는 에러만 반환
+            if (isPublicPage) {
+                console.log('공개 페이지에서 401 에러 무시');
+                return Promise.reject(error);
+            }
+
+            // 비공개 페이지에서 401이 발생하면 로그인 페이지로 리다이렉트
             if (currentPath !== "/login" && currentPath !== "/register") {
                 // 인증 정보 초기화
                 localStorage.removeItem('access_token');
@@ -64,6 +79,7 @@ api.interceptors.response.use(
                 localStorage.removeItem('user_email');
                 localStorage.removeItem('member_id');
 
+                alert('로그인이 필요합니다.');
                 router.push({
                     path: "/login",
                     query: { redirect: currentPath },
@@ -78,7 +94,8 @@ api.interceptors.response.use(
 export const productApi = {
     createProduct: (data) => api.post("/products", data),
     getProductById: (productId) => api.get(`/products/${productId}`),
-    getProducts: () => api.get("/products"), // 상품 목록 조회 (백엔드 API 필요)
+    getProducts: () => api.get("/products"), // 전체 상품 목록 조회
+    getMyProducts: () => api.get("/products/my"), // 내 상품 목록 조회 (판매자 전용)
     updateProduct: (productId, data) => api.patch(`/products/${productId}`, data),
     deleteProduct: (productId) => api.delete(`/products/${productId}`),
 };
@@ -87,8 +104,26 @@ export const productApi = {
 export const groupPurchaseApi = {
     createGroupPurchase: (data) => api.post("/purchases", data),
     getGroupPurchaseById: (purchaseId) => api.get(`/purchases/${purchaseId}`),
-    getGroupPurchasesBySeller: (sellerId, page = 0, size = 10) =>
-        api.get(`/purchases/seller/${sellerId}`, { params: { page, size } }),
+    getAllGroupPurchases: (page = 0, size = 100, sort = null) => {
+        const params = { page, size }
+        if (sort) params.sort = sort
+        return api.get("/purchases", { params }) // 전체 공동구매 목록 조회
+    },
+    getMyGroupPurchases: (sort = null) => {
+        // 내 공동구매 목록 조회 (판매자 전용)
+        const memberId = localStorage.getItem('member_id')
+        if (!memberId) {
+            return Promise.reject(new Error('로그인이 필요합니다.'))
+        }
+        const params = { page: 0, size: 100 }
+        if (sort) params.sort = sort
+        return api.get(`/purchases/seller/${memberId}`, { params })
+    },
+    getGroupPurchasesBySeller: (sellerId, page = 0, size = 10, sort = null) => {
+        const params = { page, size }
+        if (sort) params.sort = sort
+        return api.get(`/purchases/seller/${sellerId}`, { params })
+    },
     updateGroupPurchase: (purchaseId, data) => api.patch(`/purchases/${purchaseId}`, data),
     deleteGroupPurchase: (purchaseId) => api.delete(`/purchases/${purchaseId}`),
 };

@@ -48,6 +48,20 @@
             <p v-if="loadingProducts" class="form-hint">상품 목록을 불러오는 중...</p>
             <p v-else-if="!products.length" class="form-hint">등록된 상품이 없습니다. 먼저 상품을 등록해주세요.</p>
           </div>
+          <div v-if="selectedProduct" class="selected-product-info">
+            <div class="info-row">
+              <span class="info-label">선택한 상품:</span>
+              <span class="info-value">{{ selectedProduct.name }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">원가:</span>
+              <span class="info-value">₩{{ selectedProduct.price.toLocaleString() }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">재고:</span>
+              <span class="info-value">{{ selectedProduct.stock }}개</span>
+            </div>
+          </div>
         </div>
 
         <div class="form-section">
@@ -86,6 +100,15 @@
               required
               min="0"
             />
+            <p v-if="selectedProduct && form.discountedPrice" class="discount-preview">
+              <span v-if="form.discountedPrice < selectedProduct.price">
+                할인율: {{ Math.round((1 - form.discountedPrice / selectedProduct.price) * 100) }}%
+                (₩{{ (selectedProduct.price - form.discountedPrice).toLocaleString() }} 할인)
+              </span>
+              <span v-else class="warning-text">
+                할인가가 원가보다 높습니다
+              </span>
+            </p>
           </div>
         </div>
 
@@ -250,6 +273,12 @@ const isFormValid = computed(() => {
   )
 })
 
+// 선택된 상품 정보
+const selectedProduct = computed(() => {
+  if (!form.value.productId) return null
+  return products.value.find(p => p.id === form.value.productId)
+})
+
 const handleCancel = () => {
   if (confirm('작성 중인 내용이 사라집니다. 정말 취소하시겠습니까?')) {
     router.push('/seller')
@@ -365,22 +394,32 @@ const handleSubmit = async () => {
 const fetchProducts = async () => {
   loadingProducts.value = true
   try {
-    // 판매자의 상품 목록 조회 API 호출
-    const response = await authAPI.getMyProducts()
-    console.log('내 상품 목록:', response)
+    // 내 상품 목록 조회 API 호출 (판매자 전용)
+    const response = await productApi.getMyProducts()
+    console.log('내 상품 목록:', response.data)
 
-    const productsData = response.data || response
-
-    if (Array.isArray(productsData)) {
-      products.value = productsData
-    } else if (productsData && Array.isArray(productsData.content)) {
-      // Pageable 객체인 경우
-      products.value = productsData.content
-    } else {
-      products.value = []
+    // ProductDetailInfo 형식을 선택 옵션에 맞게 변환
+    let productList = []
+    if (response.data && response.data.data) {
+      productList = response.data.data
+    } else if (Array.isArray(response.data)) {
+      productList = response.data
     }
+
+    // 백엔드 ProductDetailInfo를 form에 맞게 변환
+    products.value = productList.map(p => ({
+      id: p.productId,
+      name: p.name,
+      stock: p.stock,
+      price: p.price,
+      category: p.category
+    }))
+
+    console.log('변환된 상품 목록:', products.value)
   } catch (error) {
     console.error('상품 목록 조회 실패:', error)
+    const errorMessage = error.response?.data?.message || '상품 목록을 불러오는데 실패했습니다.'
+    alert(errorMessage)
     products.value = []
     alert('상품 목록을 불러오는데 실패했습니다.')
   } finally {
@@ -389,14 +428,23 @@ const fetchProducts = async () => {
 }
 
 onMounted(() => {
-  fetchProducts()
+  // 로그인 체크
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    alert('로그인이 필요합니다.')
+    router.push('/login')
+    return
+  }
 
   // 판매자 권한 체크
-  // const role = localStorage.getItem('user_role')
-  // if (role !== 'seller') {
-  //   alert('판매자만 공동구매를 생성할 수 있습니다.')
-  //   router.push('/seller/application')
-  // }
+  const role = localStorage.getItem('user_role')
+  if (role !== 'SELLER') {
+    alert('판매자만 공동구매를 생성할 수 있습니다.')
+    router.push('/seller/application')
+    return
+  }
+
+  fetchProducts()
 })
 </script>
 
@@ -550,6 +598,45 @@ onMounted(() => {
   font-size: 12px;
   color: #666;
   margin-top: 4px;
+}
+
+.selected-product-info {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #999;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.discount-preview {
+  font-size: 13px;
+  color: #51cf66;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.warning-text {
+  color: #ff6b6b;
 }
 
 .discount-info {

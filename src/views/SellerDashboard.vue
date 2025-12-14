@@ -136,29 +136,43 @@
         <article class="panel wide">
           <div class="panel-header">
             <h2>내 상품 목록</h2>
-            <router-link to="/seller/products" class="link">전체 보기 →</router-link>
-          </div>
-          <div v-if="loadingProducts" class="loading-state">
-            <p>상품 목록을 불러오는 중...</p>
-          </div>
-          <div v-else-if="sellerProducts.length === 0" class="empty-state">
-            <p>등록된 상품이 없습니다</p>
-            <router-link to="/seller/register/product-register" class="btn btn-primary">상품 등록하기</router-link>
-          </div>
-          <div v-else class="product-list">
-            <div
-              v-for="product in sellerProducts.slice(0, 4)"
-              :key="product.productId"
-              class="product-card"
-              @click="goToProduct(product.productId)"
-            >
-              <div class="product-info">
-                <p class="category">{{ product.category || '-' }}</p>
-                <h3>{{ product.name || '-' }}</h3>
-                <p class="price">₩{{ (product.price || 0).toLocaleString() || '-' }}</p>
-                <p class="updated-date">생성일: {{ formatDate(product.createdAt) }}</p>
-              </div>
+            <div class="header-actions">
+              <router-link to="/seller/register/product-register" class="btn-new-product">+ 상품 등록</router-link>
+              <router-link to="/seller/products" class="link">전체 보기 →</router-link>
             </div>
+          </div>
+          <div class="product-list">
+            <div v-if="loading" class="loading-state">
+              <p>상품 목록을 불러오는 중...</p>
+            </div>
+            <template v-else>
+              <div
+                v-for="product in sellerProducts.slice(0, 4)"
+                :key="product.id"
+                class="product-card"
+                @click="goToProduct(product.id)"
+              >
+                <img :src="product.image" :alt="product.title" />
+                <div class="product-info">
+                  <p class="category">{{ product.category }}</p>
+                  <h3>{{ product.title }}</h3>
+                  <p class="price">₩{{ product.currentPrice.toLocaleString() }}</p>
+                  <div class="progress-info">
+                    <span class="progress-text">재고: {{ product.stock }}개</span>
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        :style="{ width: `${Math.min((product.currentCount / product.targetCount) * 100, 100)}%` }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="sellerProducts.length === 0" class="empty-state">
+                <p>등록된 상품이 없습니다</p>
+                <router-link to="/seller/register/product-register" class="btn btn-primary">상품 등록하기</router-link>
+              </div>
+            </template>
           </div>
         </article>
 
@@ -166,45 +180,46 @@
         <article class="panel wide">
           <div class="panel-header">
             <h2>공동 구매 목록</h2>
-            <router-link to="/group-purchases" class="link">전체 보기 →</router-link>
+            <div class="header-actions">
+              <router-link to="/group-purchases/create" class="btn-new-product">+ 공동구매 등록</router-link>
+              <router-link to="/group-purchases" class="link">전체 보기 →</router-link>
+            </div>
           </div>
-          <div v-if="loadingGroupPurchases" class="loading-state">
-            <p>공동 구매 목록을 불러오는 중...</p>
-          </div>
-          <div v-else-if="groupPurchaseList.length === 0" class="empty-state">
-            <p>진행 중인 공동구매가 없습니다</p>
-          </div>
-          <div v-else class="group-purchase-list">
-            <div
-              v-for="purchase in groupPurchaseList.slice(0, 3)"
-              :key="purchase.groupPurchaseId"
-              class="group-purchase-item"
-              @click="goToGroupPurchase(purchase.groupPurchaseId)"
-            >
-              <div class="item-info">
-                <h3>{{ purchase.title || '-' }}</h3>
-                <p class="item-meta">
-                  <span>참여자: {{ purchase.currentQuantity || 0 }}/{{ purchase.maxQuantity || 0 }}명</span>
-                  <span>최소: {{ purchase.minQuantity || 0 }}명</span>
-                </p>
-                <p class="item-date">
-                  <span>시작일: {{ formatDate(purchase.startDate) }}</span>
-                  <span>종료일: {{ formatDate(purchase.endDate) }}</span>
-                </p>
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    :style="{ width: `${Math.min(((purchase.currentQuantity || 0) / (purchase.maxQuantity || 1)) * 100, 100)}%` }"
-                  ></div>
+          <div class="group-purchase-list">
+            <div v-if="loadingGroupPurchases" class="loading-state">
+              <p>공동구매 목록을 불러오는 중...</p>
+            </div>
+            <template v-else>
+              <div
+                v-for="gp in sellerGroupPurchases.slice(0, 3)"
+                :key="gp.id"
+                class="group-purchase-item"
+                @click="goToGroupPurchase(gp.id)"
+              >
+                <img :src="gp.image" :alt="gp.title" />
+                <div class="item-info">
+                  <h3>{{ gp.title }}</h3>
+                  <p class="item-meta">
+                    <span>참여자: {{ gp.currentCount }}/{{ gp.maxQuantity }}명</span>
+                    <span>남은 시간: {{ getTimeRemaining(gp.endDate) }}</span>
+                  </p>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      :style="{ width: `${Math.min((gp.currentCount / gp.maxQuantity) * 100, 100)}%` }"
+                    ></div>
+                  </div>
+                </div>
+                <div class="item-price">
+                  <span class="original-price">₩{{ gp.originalPrice.toLocaleString() }}</span>
+                  <span class="current-price">₩{{ gp.discountPrice.toLocaleString() }}</span>
                 </div>
               </div>
-              <div class="item-price">
-                <span class="current-price">₩{{ (purchase.discountedPrice || 0).toLocaleString() }}</span>
-                <span class="status-badge" :class="getPurchaseStatusClass(purchase.status)">
-                  {{ getPurchaseStatusText(purchase.status) }}
-                </span>
+              <div v-if="sellerGroupPurchases.length === 0" class="empty-state">
+                <p>진행 중인 공동구매가 없습니다</p>
+                <router-link to="/group-purchases/create" class="btn btn-primary">공동구매 등록하기</router-link>
               </div>
-            </div>
+            </template>
           </div>
         </article>
 
@@ -398,6 +413,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
 import { authAPI } from '@/api/auth'
+import { productApi, groupPurchaseApi } from '@/api/axios'
 
 const router = useRouter()
 
@@ -416,6 +432,10 @@ const sellerInfo = ref({
   phoneNumber: '',
   email: ''
 })
+const sellerGroupPurchases = ref([])
+const showEditModal = ref(false)
+const loading = ref(false)
+const loadingGroupPurchases = ref(false)
 const editForm = ref({
   name: '',
   description: '',
@@ -882,11 +902,163 @@ const loadGroupPurchases = async () => {
   }
 }
 
-onMounted(async () => {
-  await loadSellerInfo()
-  await loadProducts()
-  await loadOrders()
-  await loadGroupPurchases()
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
+
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452857297128-d9c29adba80b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+}
+
+// 백엔드 데이터를 프론트엔드 형식으로 변환
+const transformProduct = (product) => {
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = product.imageUrl || product.image || product.thumbnailUrl
+  if (!image || image.trim() === '') {
+    image = categoryImages[product.category] || categoryImages['PET']
+  }
+
+  return {
+    id: product.productId,
+    title: product.name,
+    currentPrice: product.price,
+    originalPrice: product.price,
+    category: categoryMap[product.category] || product.category,
+    image: image,
+    stock: product.stock,
+    description: product.description,
+    originalUrl: product.originalLink,
+    // 공동구매 정보는 추후 별도 API로 연동 (임시 값)
+    currentCount: 0,
+    targetCount: 10,
+    timeLeft: '진행 중'
+  }
+}
+
+// 내 상품 목록 불러오기
+const fetchMyProducts = async () => {
+  loading.value = true
+  try {
+    const response = await productApi.getMyProducts()
+    console.log('내 상품 목록:', response.data)
+
+    // 백엔드 응답 데이터 변환
+    if (response.data && response.data.data) {
+      sellerProducts.value = response.data.data.map(transformProduct)
+    } else if (Array.isArray(response.data)) {
+      sellerProducts.value = response.data.map(transformProduct)
+    }
+  } catch (error) {
+    console.error('상품 목록 조회 실패:', error)
+    // 에러 시 빈 배열 유지
+    sellerProducts.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 공동구매 데이터 변환
+const transformGroupPurchase = (gp) => {
+  // 카테고리 변환 (백엔드 enum -> 한글)
+  const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+  if (!image || image.trim() === '') {
+    // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
+    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+  }
+
+  return {
+    id: gp.groupPurchaseId || gp.id,
+    title: gp.title,
+    description: gp.description,
+    productName: gp.productName || '상품명',
+    category: categoryKorean,
+    discountPrice: gp.discountedPrice || gp.discountPrice || 0,
+    originalPrice: gp.price || gp.originalPrice || 0,
+    minQuantity: gp.minQuantity,
+    maxQuantity: gp.maxQuantity,
+    currentCount: gp.currentQuantity || 0,
+    status: gp.status || 'OPEN',
+    startDate: gp.startDate,
+    endDate: gp.endDate,
+    image: image
+  }
+}
+
+// 내 공동구매 목록 불러오기
+const fetchMyGroupPurchases = async () => {
+  loadingGroupPurchases.value = true
+  try {
+    const response = await groupPurchaseApi.getMyGroupPurchases()
+    console.log('내 공동구매 목록:', response.data)
+
+    // 백엔드 응답 데이터 변환
+    const data = response.data.data || response.data
+    const content = data.content || data
+
+    if (Array.isArray(content)) {
+      sellerGroupPurchases.value = content.map(transformGroupPurchase)
+    } else if (Array.isArray(data)) {
+      sellerGroupPurchases.value = data.map(transformGroupPurchase)
+    }
+  } catch (error) {
+    console.error('공동구매 목록 조회 실패:', error)
+    sellerGroupPurchases.value = []
+  } finally {
+    loadingGroupPurchases.value = false
+  }
+}
+
+// 남은 시간 계산
+const getTimeRemaining = (endDate) => {
+  if (!endDate) return '기간 미정'
+
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end - now
+
+  if (diff < 0) return '종료됨'
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+
+  if (days > 0) return `${days}일 남음`
+  if (hours > 0) return `${hours}시간 남음`
+  return '1시간 이내'
+}
+
+// 공동구매 상세로 이동
+const goToGroupPurchase = (id) => {
+  router.push({ name: 'group-purchase-detail', params: { id } })
+}
+
+onMounted(() => {
+  loadSellerInfo()
+  fetchMyProducts()
+  fetchMyGroupPurchases()
+  loadProducts()
+  loadOrders()
+  loadGroupPurchases()
 })
 </script>
 
@@ -1124,6 +1296,30 @@ onMounted(async () => {
 
 .link:hover {
   color: #cccccc;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-new-product {
+  padding: 8px 16px;
+  background: #ffffff;
+  color: #0a0a0a;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-new-product:hover {
+  background: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 /* 정산 현황 */
@@ -1809,6 +2005,27 @@ onMounted(async () => {
 .loading-state p {
   margin: 0;
   color: #999;
+
+/* 로딩 상태 */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 15px;
+}
+
+.loading-state p {
+  margin: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* 버튼 */

@@ -3,8 +3,8 @@
     <div class="container">
       <div class="page-header">
         <div>
-          <h1>{{ route.query.sellerId ? '내 공동구매 목록' : '공동구매 목록' }}</h1>
-          <p>{{ route.query.sellerId ? '운영 중인 공동구매를 확인하세요' : '진행 중인 공동구매를 확인하세요' }}</p>
+          <h1>{{ route.query.sellerId ? '판매자별 공동구매 목록' : '내 공동구매 목록' }}</h1>
+          <p>{{ route.query.sellerId ? '해당 판매자의 공동구매를 확인하세요' : '등록한 모든 공동구매를 확인하고 관리할 수 있습니다.' }}</p>
         </div>
         <!-- <button v-if="isSeller" class="btn btn-primary" @click="goToCreate"> -->
         <button class="btn btn-primary" @click="goToCreate"> 
@@ -24,6 +24,12 @@
             <button class="btn btn-outline" @click="search">검색</button>
           </div>
           <div class="filter-actions">
+            <select v-model="sortFilter" class="sort-filter" @change="loadGroupPurchases">
+              <option value="">최신순</option>
+              <option value="currentQuantity,desc">인기순</option>
+              <option value="endDate,asc">마감 직전 순</option>
+              <option value="createdAt,desc">등록순</option>
+            </select>
             <select v-model="statusFilter" class="status-filter">
               <option value="">전체 상태</option>
               <option value="SCHEDULED">예정됨</option>
@@ -56,13 +62,11 @@
       <div v-else class="group-purchase-list-container">
         <div class="gp-list-header">
           <div class="gp-col gp-col-status">상태</div>
-          <div class="gp-col gp-col-title">제목</div>
-          <div class="gp-col gp-col-product">상품명</div>
-          <div class="gp-col gp-col-seller">판매자</div>
+          <div class="gp-col gp-col-title">공동구매명</div>
           <div class="gp-col gp-col-price">가격</div>
           <div class="gp-col gp-col-progress">진행률</div>
           <div class="gp-col gp-col-time">남은 시간</div>
-          <div class="gp-col gp-col-action">주문내역</div>
+          <div class="gp-col gp-col-action">관리</div>
         </div>
         <article
           v-for="gp in filteredGroupPurchases"
@@ -81,12 +85,6 @@
                 <h3 class="title">{{ gp.title }}</h3>
                 <span class="category">{{ gp.category }}</span>
               </div>
-            </div>
-            <div class="gp-col gp-col-product">
-              <span class="product-name">{{ gp.productName }}</span>
-            </div>
-            <div class="gp-col gp-col-seller">
-              <span class="seller-name">{{ gp.seller }}</span>
             </div>
             <div class="gp-col gp-col-price">
               <div class="price-wrapper">
@@ -115,13 +113,40 @@
               </span>
             </div>
             <div class="gp-col gp-col-action">
-              <button 
-                v-if="isSeller && isOwner(gp)" 
-                class="expand-btn"
-                @click.stop="handleCardClick(gp.id, gp)"
-              >
-                <span>{{ expandedId === gp.id ? '▼' : '▶' }}</span>
-              </button>
+              <!-- 내 공동구매 목록이거나 소유자인 경우 버튼 표시 -->
+              <div v-if="!route.query.sellerId || isOwner(gp)" class="action-buttons">
+                <!-- SCHEDULED (예정됨): 수정 + 삭제 -->
+                <template v-if="gp.status === 'SCHEDULED'">
+                  <button
+                    class="btn btn-sm btn-outline"
+                    @click.stop="handleEdit(gp.id)"
+                  >
+                    수정
+                  </button>
+                  <button
+                    class="btn btn-sm btn-danger-outline"
+                    @click.stop="handleDelete(gp.id)"
+                  >
+                    삭제
+                  </button>
+                </template>
+                <!-- OPEN (진행중): 수정만 -->
+                <button
+                  v-else-if="gp.status === 'OPEN'"
+                  class="btn btn-sm btn-outline"
+                  @click.stop="handleEdit(gp.id)"
+                >
+                  수정
+                </button>
+                <!-- 기타 상태: 드롭다운 -->
+                <button
+                  v-else
+                  class="expand-btn"
+                  @click.stop="handleCardClick(gp.id, gp)"
+                >
+                  <span>{{ expandedId === gp.id ? '▼' : '▶' }}</span>
+                </button>
+              </div>
               <span v-else class="no-action">-</span>
             </div>
           </div>
@@ -198,8 +223,35 @@ const groupPurchases = ref([])
 const keyword = ref('')
 const statusFilter = ref('')
 const categoryFilter = ref('')
+const sortFilter = ref('')
 const expandedId = ref(null)
 const loading = ref(false)
+
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+}
+
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
 
 const isSeller = computed(() => {
   return localStorage.getItem('user_role') === 'seller'
@@ -238,20 +290,37 @@ const loadGroupPurchases = async () => {
   try {
     const sellerId = route.query.sellerId
 
+    let response
     if (sellerId) {
       // 판매자별 공동구매 목록 조회
-      const response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100)
+      response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100, sortFilter.value)
       console.log('판매자별 공동구매 목록:', response.data)
+    } else {
+      // 내 공동구매 목록 조회 (판매자 전용)
+      response = await groupPurchaseApi.getMyGroupPurchases(sortFilter.value)
+      console.log('내 공동구매 목록:', response.data)
+    }
 
-      // 응답 구조에 따라 조정
-      const data = response.data.data || response.data
-      const content = data.content || data
+    // 응답 구조에 따라 조정
+    const data = response.data.data || response.data
+    const content = data.content || data
 
-      // 백엔드 응답을 프론트엔드 형식으로 매핑
-      groupPurchases.value = Array.isArray(content) ? content.map(gp => ({
+    // 백엔드 응답을 프론트엔드 형식으로 매핑
+    groupPurchases.value = Array.isArray(content) ? content.map(gp => {
+      // 카테고리 변환 (백엔드 enum -> 한글)
+      const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+
+      // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+      let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+      if (!image || image.trim() === '') {
+        // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
+        image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+      }
+
+      return {
         id: gp.groupPurchaseId || gp.id,
         title: gp.title,
-        category: gp.category || '기타',
+        category: categoryKorean,
         description: gp.description,
         productName: gp.productName || '상품명',
         seller: gp.sellerName || '판매자',
@@ -264,15 +333,14 @@ const loadGroupPurchases = async () => {
         status: gp.status || 'OPEN',
         startDate: gp.startDate,
         endDate: gp.endDate,
-        createdAt: gp.createdAt
-      })) : []
-    } else {
-      // TODO: 전체 공동구매 목록 조회 API가 필요합니다
-      // 현재는 localStorage에서 가져옴
-      groupPurchases.value = JSON.parse(localStorage.getItem('group_purchases') || '[]')
-    }
+        createdAt: gp.createdAt,
+        image: image
+      }
+    }) : []
   } catch (error) {
     console.error('공동구매 목록 조회 실패:', error)
+    const errorMessage = error.response?.data?.message || '공동구매 목록을 불러오는데 실패했습니다.'
+    console.error(errorMessage)
     groupPurchases.value = []
   } finally {
     loading.value = false
@@ -310,7 +378,18 @@ const getTimeRemaining = (endDate) => {
 }
 
 const isOwner = (gp) => {
-  return gp.sellerId === currentSellerId.value
+  const memberId = localStorage.getItem('member_id')
+  const userEmail = localStorage.getItem('user_email')
+
+  console.log('isOwner 체크:', {
+    'gp.sellerId': gp.sellerId,
+    'currentSellerId': currentSellerId.value,
+    'member_id': memberId,
+    'user_email': userEmail
+  })
+
+  // sellerId가 member_id, user_email 중 하나와 일치하면 소유자로 판단
+  return gp.sellerId === memberId || gp.sellerId === userEmail || gp.sellerId === currentSellerId.value
 }
 
 const handleCardClick = (id, gp) => {
@@ -329,6 +408,27 @@ const handleCardClick = (id, gp) => {
 
 const goToCreate = () => {
   router.push({ name: 'group-purchase-create' })
+}
+
+const handleEdit = (id) => {
+  router.push({ name: 'group-purchase-edit', params: { id } })
+}
+
+const handleDelete = async (id) => {
+  if (!confirm('정말 이 공동구매를 삭제하시겠습니까?')) {
+    return
+  }
+
+  try {
+    await groupPurchaseApi.deleteGroupPurchase(id)
+    alert('공동구매가 삭제되었습니다.')
+    // 목록 새로고침
+    await loadGroupPurchases()
+  } catch (error) {
+    console.error('공동구매 삭제 실패:', error)
+    const errorMessage = error.response?.data?.message || '공동구매 삭제에 실패했습니다.'
+    alert(errorMessage)
+  }
 }
 
 const getOrdersForGroupPurchase = (groupId) => {
@@ -522,6 +622,7 @@ watch(() => route.query.sellerId, () => {
   gap: 8px;
 }
 
+.sort-filter,
 .status-filter,
 .category-filter {
   padding: 12px 16px;
@@ -531,6 +632,13 @@ watch(() => route.query.sellerId, () => {
   font-size: 14px;
   color: #ffffff;
   cursor: pointer;
+}
+
+.sort-filter:focus,
+.status-filter:focus,
+.category-filter:focus {
+  outline: none;
+  border-color: #ffffff;
 }
 
 .empty-state {
@@ -555,7 +663,7 @@ watch(() => route.query.sellerId, () => {
 
 .gp-list-header {
   display: grid;
-  grid-template-columns: 0.8fr 2fr 1.5fr 1fr 1.2fr 1.5fr 1.2fr 0.8fr;
+  grid-template-columns: 0.8fr 2.5fr 1.2fr 1.5fr 1.2fr 1fr;
   gap: 16px;
   padding: 14px 20px;
   background: #0f0f0f;
@@ -584,7 +692,7 @@ watch(() => route.query.sellerId, () => {
 
 .gp-list-row {
   display: grid;
-  grid-template-columns: 0.8fr 2fr 1.5fr 1fr 1.2fr 1.5fr 1.2fr 0.8fr;
+  grid-template-columns: 0.8fr 2.5fr 1.2fr 1.5fr 1.2fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   cursor: pointer;
@@ -771,24 +879,23 @@ watch(() => route.query.sellerId, () => {
   font-size: 12px;
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1024px) {
   .gp-list-header,
   .gp-list-row {
-    grid-template-columns: 0.8fr 2fr 1.2fr 1fr 1.2fr 1.2fr 0.8fr;
+    grid-template-columns: 0.8fr 2fr 1.2fr 1.2fr 1fr;
   }
-  
+
   .gp-col-time {
     display: none;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .gp-list-header,
   .gp-list-row {
-    grid-template-columns: 0.8fr 2fr 1fr 1fr 1fr 0.8fr;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
   }
-  
-  .gp-col-product,
+
   .gp-col-progress {
     display: none;
   }
@@ -829,6 +936,50 @@ watch(() => route.query.sellerId, () => {
 .order-count {
   font-size: 14px;
   color: #999;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid #ff4757;
+  color: #ff4757;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger-outline:hover {
+  background: #ff4757;
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  background: #2a2a2a;
+  border-color: #4a4a4a;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .no-orders {

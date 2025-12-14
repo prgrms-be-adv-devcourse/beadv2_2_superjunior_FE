@@ -239,147 +239,171 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { groupPurchaseApi } from '@/api/axios'
 
 const router = useRouter()
 
 const keyword = ref('')
 const categories = [
-  { id: 1, name: '전자제품', icon: '📱' },
-  { id: 2, name: '패션', icon: '👕' },
-  { id: 3, name: '식품', icon: '🍎' },
+  { id: 1, name: '생활 & 주방', icon: '🏠' },
+  { id: 2, name: '식품 & 간식', icon: '🍎' },
+  { id: 3, name: '건강 & 헬스', icon: '💪' },
   { id: 4, name: '뷰티', icon: '💄' },
-  { id: 5, name: '홈/리빙', icon: '🏠' },
-  { id: 6, name: '스포츠', icon: '⚽' },
-  { id: 7, name: '도서', icon: '📚' },
-  { id: 8, name: '기타', icon: '📦' }
+  { id: 5, name: '패션 & 의류', icon: '👟' },
+  { id: 6, name: '전자 & 디지털', icon: '📱' },
+  { id: 7, name: '유아 & 어린이', icon: '👶' },
+  { id: 8, name: '취미', icon: '🎨' },
+  { id: 9, name: '반려동물', icon: '🐾' }
 ]
 
-const popularProducts = ref([
-        {
-          id: 1,
-          title: '아이폰 15 Pro Max 256GB',
-          category: '전자제품',
-          seller: '테크샵',
-          image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
-          originalPrice: 1590000,
-          currentPrice: 1190000,
-          discountRate: 25,
-          currentCount: 45,
-          targetCount: 50,
-          timeLeft: '2일 5시간 남음',
-          hot: true,
-          urgent: false
-        },
-        {
-          id: 2,
-          title: '나이키 에어맥스 운동화',
-          category: '패션',
-          seller: '스포츠월드',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-          originalPrice: 149000,
-          currentPrice: 99000,
-          discountRate: 34,
-          currentCount: 78,
-          targetCount: 100,
-          timeLeft: '5일 남음',
-          hot: true,
-          urgent: false
-        },
-        {
-          id: 3,
-          title: '프리미엄 한우 세트 (1kg)',
-          category: '식품',
-          seller: '프리미엄푸드',
-          image: 'https://images.unsplash.com/photo-1603048297172-c92544798d5a?w=400',
-          originalPrice: 89000,
-          currentPrice: 59000,
-          discountRate: 34,
-          currentCount: 32,
-          targetCount: 40,
-          timeLeft: '1일 12시간 남음',
-          hot: true,
-          urgent: true
-        },
-        {
-          id: 4,
-          title: '디올 립스틱 세트',
-          category: '뷰티',
-          seller: '뷰티플러스',
-          image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400',
-          originalPrice: 89000,
-          currentPrice: 59000,
-          discountRate: 34,
-          currentCount: 56,
-          targetCount: 60,
-          timeLeft: '3일 남음',
-          hot: true,
-          urgent: false
-        }
-      ])
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+}
 
-const endingProducts = ref([
-        {
-          id: 5,
-          title: '갤럭시 워치6 클래식',
-          category: '전자제품',
-          seller: '스마트샵',
-          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
-          originalPrice: 399000,
-          currentPrice: 299000,
-          discountRate: 25,
-          currentCount: 18,
-          targetCount: 20,
-          timeLeft: '3시간 남음',
-          urgent: true
-        },
-        {
-          id: 6,
-          title: '프리미엄 와인 세트',
-          category: '식품',
-          seller: '와인나라',
-          image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400',
-          originalPrice: 129000,
-          currentPrice: 89000,
-          discountRate: 31,
-          currentCount: 28,
-          targetCount: 30,
-          timeLeft: '5시간 남음',
-          urgent: true
-        }
-      ])
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
 
-const newProducts = ref([
-        {
-          id: 7,
-          title: '무선 이어폰 프로',
-          category: '전자제품',
-          seller: '오디오샵',
-          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
-          originalPrice: 199000,
-          currentPrice: 139000,
-          discountRate: 30,
-          currentCount: 12,
-          targetCount: 50,
-          timeLeft: '7일 남음',
-          urgent: false
-        },
-        {
-          id: 8,
-          title: '프리미엄 쿠션 세트',
-          category: '뷰티',
-          seller: '코스메틱',
-          image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400',
-          originalPrice: 69000,
-          currentPrice: 49000,
-          discountRate: 29,
-          currentCount: 8,
-          targetCount: 30,
-          timeLeft: '6일 남음',
-          urgent: false
-        }
-      ])
+const popularProducts = ref([])
+const endingProducts = ref([])
+const newProducts = ref([])
+
+// 남은 시간 계산
+const getTimeRemaining = (endDate) => {
+  if (!endDate) return '기간 미정'
+
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end - now
+
+  if (diff < 0) return '종료됨'
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (days > 0) return `${days}일 ${hours}시간 남음`
+  if (hours > 0) return `${hours}시간 ${minutes}분 남음`
+  return `${minutes}분 남음`
+}
+
+// 백엔드 데이터를 프론트엔드 형식으로 변환
+const transformGroupPurchase = (gp) => {
+  // 카테고리 변환 (백엔드 enum -> 한글)
+  const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+  if (!image || image.trim() === '') {
+    // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
+    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+  }
+
+  const originalPrice = gp.price || 0
+  const currentPrice = gp.discountedPrice || 0
+  const discountRate = originalPrice > 0 ? Math.round((1 - currentPrice / originalPrice) * 100) : 0
+
+  return {
+    id: gp.groupPurchaseId || gp.id,
+    title: gp.title,
+    category: categoryKorean,
+    seller: gp.sellerName || gp.sellerEmail || '판매자',
+    image: image,
+    originalPrice: originalPrice,
+    currentPrice: currentPrice,
+    discountRate: discountRate,
+    currentCount: gp.currentQuantity || 0,
+    targetCount: gp.maxQuantity || 0,
+    timeLeft: getTimeRemaining(gp.endDate),
+    hot: false,
+    urgent: false
+  }
+}
+
+// 인기 공동구매 로드 (참여자 많은 순)
+const loadPopularProducts = async () => {
+  try {
+    const response = await groupPurchaseApi.getAllGroupPurchases(0, 4, 'currentQuantity,desc')
+    console.log('인기 공동구매:', response.data)
+
+    const data = response.data.data || response.data
+    const content = data.content || data
+
+    if (Array.isArray(content)) {
+      popularProducts.value = content.map(gp => {
+        const product = transformGroupPurchase(gp)
+        product.hot = true
+        return product
+      })
+    }
+  } catch (error) {
+    console.error('인기 공동구매 조회 실패:', error)
+    popularProducts.value = []
+  }
+}
+
+// 마감 임박 공동구매 로드 (종료일 빠른 순)
+const loadEndingProducts = async () => {
+  try {
+    const response = await groupPurchaseApi.getAllGroupPurchases(0, 2, 'endDate,asc')
+    console.log('마감 임박 공동구매:', response.data)
+
+    const data = response.data.data || response.data
+    const content = data.content || data
+
+    if (Array.isArray(content)) {
+      endingProducts.value = content.map(gp => {
+        const product = transformGroupPurchase(gp)
+        product.urgent = true
+        return product
+      })
+    }
+  } catch (error) {
+    console.error('마감 임박 공동구매 조회 실패:', error)
+    endingProducts.value = []
+  }
+}
+
+// 최신 공동구매 로드 (등록일 최신순)
+const loadNewProducts = async () => {
+  try {
+    const response = await groupPurchaseApi.getAllGroupPurchases(0, 2, 'createdAt,desc')
+    console.log('최신 공동구매:', response.data)
+
+    const data = response.data.data || response.data
+    const content = data.content || data
+
+    if (Array.isArray(content)) {
+      newProducts.value = content.map(gp => {
+        const product = transformGroupPurchase(gp)
+        return product
+      })
+    }
+  } catch (error) {
+    console.error('최신 공동구매 조회 실패:', error)
+    newProducts.value = []
+  }
+}
 
 const onSearch = () => {
   if (!keyword.value.trim()) return
@@ -391,8 +415,15 @@ const filterByCategory = (categoryId) => {
 }
 
 const goToProduct = (productId) => {
-  router.push({ name: 'product-detail', params: { id: productId } })
+  router.push({ name: 'group-purchase-detail', params: { id: productId } })
 }
+
+// 페이지 로드 시 데이터 가져오기
+onMounted(() => {
+  loadPopularProducts()
+  loadEndingProducts()
+  loadNewProducts()
+})
 </script>
 
 <style scoped>
