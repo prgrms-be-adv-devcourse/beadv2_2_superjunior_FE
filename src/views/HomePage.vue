@@ -8,12 +8,12 @@
           <h1 class="hero-title">함께하면 더 저렴하게</h1>
           <p class="hero-subtitle">공동구매로 최대 50% 할인받고, 안전한 거래로 만족스러운 쇼핑을 경험하세요</p>
           <div class="search-box">
-            <input 
-              v-model="keyword" 
-              type="text" 
-              placeholder="상품명, 브랜드, 카테고리를 검색해보세요" 
+            <input
+              v-model="keyword"
+              type="text"
+              placeholder="상품명, 브랜드, 카테고리를 검색해보세요"
               class="search-input"
-              @keyup.enter="onSearch" 
+              @keyup.enter="onSearch"
             />
             <button class="btn btn-primary btn-search" @click="onSearch">
               <span>검색</span>
@@ -41,15 +41,15 @@
     <section class="section categories-section">
       <div class="container">
         <h2 class="section-title">카테고리</h2>
-        <div class="categories-grid">
-          <div 
-            v-for="category in categories" 
-            :key="category.id" 
+        <div ref="categoriesEl" class="categories-scroll">
+          <div
+            v-for="category in categories"
+            :key="category.id"
             class="category-card"
-            @click="filterByCategory(category.id)"
+            @click="filterByCategory(category.value)"
           >
             <div class="category-icon">{{ category.icon }}</div>
-            <div class="category-name">{{ category.name }}</div>
+            <div class="category-name">{{ category.label }}</div>
           </div>
         </div>
       </div>
@@ -63,16 +63,18 @@
           <router-link :to="{ name: 'products', query: { section: 'popular' } }" class="view-all">전체보기 →</router-link>
         </div>
         <div class="products-grid">
-          <div 
-            v-for="product in popularProducts" 
-            :key="product.id" 
+          <div
+            v-for="product in popularProducts"
+            :key="product.id"
             class="product-card"
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
-              <div v-if="product.urgent" class="badge urgent">마감임박</div>
-              <div v-if="product.hot" class="badge hot">인기</div>
+              <div
+                class="product-image"
+                :style="{ backgroundImage: `url(${product.image})` }"
+              ></div>
+              <div class="badge hot">인기</div>
             </div>
             <div class="product-info">
               <div class="product-category">{{ product.category }}</div>
@@ -91,8 +93,8 @@
                   <span class="progress-target">목표: {{ product.targetCount }}명</span>
                 </div>
                 <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
+                  <div
+                    class="progress-fill"
                     :style="{ width: `${(product.currentCount / product.targetCount) * 100}%` }"
                   ></div>
                 </div>
@@ -115,9 +117,9 @@
           <router-link :to="{ name: 'products', query: { section: 'ending' } }" class="view-all">전체보기 →</router-link>
         </div>
         <div class="products-grid">
-          <div 
-            v-for="product in endingProducts" 
-            :key="product.id" 
+          <div
+            v-for="product in endingProducts"
+            :key="product.id"
             class="product-card"
             @click="goToProduct(product.id)"
           >
@@ -141,9 +143,14 @@
                   <span class="progress-target">목표: {{ product.targetCount }}명</span>
                 </div>
                 <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
-                    :style="{ width: `${(product.currentCount / product.targetCount) * 100}%` }"
+                  <div
+                    class="progress-fill"
+                    :style="{
+                      width: `${Math.min(
+                        (product.currentCount / product.targetCount) * 100,
+                        100
+                      )}%`
+                    }"
                   ></div>
                 </div>
               </div>
@@ -165,9 +172,9 @@
           <router-link :to="{ name: 'products', query: { section: 'new' } }" class="view-all">전체보기 →</router-link>
         </div>
         <div class="products-grid">
-          <div 
-            v-for="product in newProducts" 
-            :key="product.id" 
+          <div
+            v-for="product in newProducts"
+            :key="product.id"
             class="product-card"
             @click="goToProduct(product.id)"
           >
@@ -191,8 +198,8 @@
                   <span class="progress-target">목표: {{ product.targetCount }}명</span>
                 </div>
                 <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
+                  <div
+                    class="progress-fill"
                     :style="{ width: `${(product.currentCount / product.targetCount) * 100}%` }"
                   ></div>
                 </div>
@@ -239,7 +246,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { groupPurchaseApi } from '@/api/axios'
 
@@ -247,15 +254,16 @@ const router = useRouter()
 
 const keyword = ref('')
 const categories = [
-  { id: 1, name: '생활 & 주방', icon: '🏠' },
-  { id: 2, name: '식품 & 간식', icon: '🍎' },
-  { id: 3, name: '건강 & 헬스', icon: '💪' },
-  { id: 4, name: '뷰티', icon: '💄' },
-  { id: 5, name: '패션 & 의류', icon: '👟' },
-  { id: 6, name: '전자 & 디지털', icon: '📱' },
-  { id: 7, name: '유아 & 어린이', icon: '👶' },
-  { id: 8, name: '취미', icon: '🎨' },
-  { id: 9, name: '반려동물', icon: '🐾' }
+  { id: 1, value: 'ALL', label: '전체', icon: '✨' },
+  { id: 2, value: 'HOME', label: '생활 · 주방', icon: '🏠' },
+  { id: 3, value: 'FOOD', label: '식품 · 간식', icon: '🍎' },
+  { id: 4, value: 'HEALTH', label: '건강 · 헬스', icon: '💊' },
+  { id: 5, value: 'BEAUTY', label: '뷰티', icon: '💄' },
+  { id: 6, value: 'FASHION', label: '패션 · 의류', icon: '👟' },
+  { id: 7, value: 'ELECTRONICS', label: '전자 · 디지털', icon: '📱' },
+  { id: 8, value: 'KIDS', label: '유아 · 어린이', icon: '🧸' },
+  { id: 9, value: 'HOBBY', label: '취미', icon: '🎮' },
+  { id: 10, value: 'PET', label: '반려동물', icon: '🐶' }
 ]
 
 // 카테고리별 기본 이미지
@@ -285,124 +293,132 @@ const categoryMap = {
 }
 
 const popularProducts = ref([])
-const endingProducts = ref([])
-const newProducts = ref([])
 
-// 남은 시간 계산
-const getTimeRemaining = (endDate) => {
-  if (!endDate) return '기간 미정'
+//드래그 스크롤
+const categoriesEl = ref(null)
 
-  const now = new Date()
-  const end = new Date(endDate)
-  const diff = end - now
+let isDown = false
+let startX = 0
+let scrollLeft = 0
 
-  if (diff < 0) return '종료됨'
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-  if (days > 0) return `${days}일 ${hours}시간 남음`
-  if (hours > 0) return `${hours}시간 ${minutes}분 남음`
-  return `${minutes}분 남음`
+const onMouseDown = (e) => {
+  if (!categoriesEl.value) return
+  isDown = true
+  categoriesEl.value.classList.add('dragging')
+  startX = e.pageX - categoriesEl.value.offsetLeft
+  scrollLeft = categoriesEl.value.scrollLeft
 }
 
-// 백엔드 데이터를 프론트엔드 형식으로 변환
-const transformGroupPurchase = (gp) => {
+const onMouseLeave = () => {
+  isDown = false
+  categoriesEl.value?.classList.remove('dragging')
+}
+
+const onMouseUp = () => {
+  isDown = false
+  categoriesEl.value?.classList.remove('dragging')
+}
+
+const onMouseMove = (e) => {
+  if (!isDown || !categoriesEl.value) return
+  e.preventDefault()
+  const x = e.pageX - categoriesEl.value.offsetLeft
+  const walk = (x - startX) * 1.5 // 드래그 속도
+  categoriesEl.value.scrollLeft = scrollLeft - walk
+}
+
+//남은 날짜 계산
+const calcTimeLeft = (endDate) => {
+  if (!endDate) return ''
+
+  const end = new Date(endDate)
+  const now = new Date()
+  const diffMs = end - now
+
+  if (diffMs <= 0) return '마감'
+
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+
+  return days > 0
+    ? `${days}일 ${hours}시간 남음`
+    : `${hours}시간 남음`
+}
+
+const isUrgent = (endDate) => {
+  if (!endDate) return false
+  return (new Date(endDate) - new Date()) / (1000 * 60 * 60) <= 24
+}
+
+//진행 중인 공동구매 중 참여 수량이 제일 많은 항목 불러오기
+const fetchPopularProducts = async () => {
+  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'currentQuantity,desc')
+  const data = response.data.data || response.data
+  const content = data.content || data
+
+  // OPEN 상태만 필터링하고 상위 6개만 반환
+  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
+  return openItems.slice(0, 6)
+}
+
+//형식 맞추기
+const mapToProductCard = (gp) => {
   // 카테고리 변환 (백엔드 enum -> 한글)
   const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
 
   // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
   let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
   if (!image || image.trim() === '') {
-    // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
-    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+    image = categoryImages[gp.category] || categoryImages['PET']
   }
 
-  const originalPrice = gp.price || 0
-  const currentPrice = gp.discountedPrice || 0
-  const discountRate = originalPrice > 0 ? Math.round((1 - currentPrice / originalPrice) * 100) : 0
+  const originalPrice = gp.price || gp.originalPrice || 0
+  const discountedPrice = gp.discountedPrice || gp.discountPrice || originalPrice
+  const discountRate = originalPrice > 0 ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0
 
   return {
     id: gp.groupPurchaseId || gp.id,
     title: gp.title,
+    subtitle: gp.description,
     category: categoryKorean,
-    seller: gp.sellerName || gp.sellerEmail || '판매자',
+    seller: gp.sellerName || '판매자',
     image: image,
     originalPrice: originalPrice,
-    currentPrice: currentPrice,
+    currentPrice: discountedPrice,
     discountRate: discountRate,
     currentCount: gp.currentQuantity || 0,
-    targetCount: gp.maxQuantity || 0,
-    timeLeft: getTimeRemaining(gp.endDate),
-    hot: false,
-    urgent: false
+    targetCount: gp.maxQuantity || 1,
+    timeLeft: calcTimeLeft(gp.endDate),
+    hot: (gp.currentQuantity || 0) >= (gp.minQuantity || 0),
+    urgent: isUrgent(gp.endDate)
   }
 }
 
-// 인기 공동구매 로드 (참여자 많은 순)
-const loadPopularProducts = async () => {
-  try {
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 4, 'currentQuantity,desc')
-    console.log('인기 공동구매:', response.data)
+//마감 임박
+const endingProducts = ref([])
 
-    const data = response.data.data || response.data
-    const content = data.content || data
+const fetchEndingProducts = async () => {
+  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'endDate,asc')
+  const data = response.data.data || response.data
+  const content = data.content || data
 
-    if (Array.isArray(content)) {
-      popularProducts.value = content.map(gp => {
-        const product = transformGroupPurchase(gp)
-        product.hot = true
-        return product
-      })
-    }
-  } catch (error) {
-    console.error('인기 공동구매 조회 실패:', error)
-    popularProducts.value = []
-  }
+  // OPEN 상태만 필터링하고 상위 6개만 반환
+  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
+  return openItems.slice(0, 6)
 }
 
-// 마감 임박 공동구매 로드 (종료일 빠른 순)
-const loadEndingProducts = async () => {
-  try {
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 2, 'endDate,asc')
-    console.log('마감 임박 공동구매:', response.data)
+//최신 공동구매
+const newProducts = ref([])
 
-    const data = response.data.data || response.data
-    const content = data.content || data
+const fetchNewProducts = async () => {
+  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'startDate,desc')
+  const data = response.data.data || response.data
+  const content = data.content || data
 
-    if (Array.isArray(content)) {
-      endingProducts.value = content.map(gp => {
-        const product = transformGroupPurchase(gp)
-        product.urgent = true
-        return product
-      })
-    }
-  } catch (error) {
-    console.error('마감 임박 공동구매 조회 실패:', error)
-    endingProducts.value = []
-  }
-}
-
-// 최신 공동구매 로드 (등록일 최신순)
-const loadNewProducts = async () => {
-  try {
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 2, 'createdAt,desc')
-    console.log('최신 공동구매:', response.data)
-
-    const data = response.data.data || response.data
-    const content = data.content || data
-
-    if (Array.isArray(content)) {
-      newProducts.value = content.map(gp => {
-        const product = transformGroupPurchase(gp)
-        return product
-      })
-    }
-  } catch (error) {
-    console.error('최신 공동구매 조회 실패:', error)
-    newProducts.value = []
-  }
+  // OPEN 상태만 필터링하고 상위 6개만 반환
+  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
+  return openItems.slice(0, 6)
 }
 
 const onSearch = () => {
@@ -418,11 +434,43 @@ const goToProduct = (productId) => {
   router.push({ name: 'group-purchase-detail', params: { id: productId } })
 }
 
-// 페이지 로드 시 데이터 가져오기
-onMounted(() => {
-  loadPopularProducts()
-  loadEndingProducts()
-  loadNewProducts()
+onMounted(async () => {
+  // 카테고리 드래그 스크롤 이벤트 등록
+  const el = categoriesEl.value
+  if (el) {
+    el.addEventListener('mousedown', onMouseDown)
+    el.addEventListener('mouseleave', onMouseLeave)
+    window.addEventListener('mouseup', onMouseUp)
+    el.addEventListener('mousemove', onMouseMove)
+  }
+
+  // 공동구매 데이터 로드
+  try {
+    const [popularDocs, endingDocs, newDocs] = await Promise.all([
+      fetchPopularProducts(),
+      fetchEndingProducts(),
+      fetchNewProducts()
+    ])
+
+    popularProducts.value = popularDocs.map(mapToProductCard)
+    endingProducts.value = endingDocs.map(mapToProductCard)
+    newProducts.value = newDocs.map(mapToProductCard)
+  } catch (e) {
+    console.error('메인 페이지 상품 조회 실패', e)
+    popularProducts.value = []
+    endingProducts.value = []
+    newProducts.value = []
+  }
+})
+
+onBeforeUnmount(() => {
+  const el = categoriesEl.value
+  if (el) {
+    el.removeEventListener('mousedown', onMouseDown)
+    el.removeEventListener('mouseleave', onMouseLeave)
+    window.removeEventListener('mouseup', onMouseUp)
+    el.removeEventListener('mousemove', onMouseMove)
+  }
 })
 </script>
 
@@ -571,40 +619,68 @@ onMounted(() => {
   color: #cccccc;
 }
 
-/* 카테고리 */
+/* 카테고리 (가로 드래그) */
 .categories-section {
   background: #0a0a0a;
 }
 
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 20px;
+.categories-scroll.dragging {
+  cursor: grabbing;
+}
+
+.categories-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+
+  cursor: grab;
+  user-select: none;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 8px 4px 12px;
+
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: none;
+}
+
+.categories-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .category-card {
-  text-align: center;
-  padding: 24px 16px;
+  flex: 0 0 auto;
+  min-width: 110px;
+  height: 96px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  border-radius: 16px;
+
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .category-card:hover {
-  background: #222222;
   border-color: #ffffff;
   transform: translateY(-2px);
 }
 
 .category-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
+  font-size: 32px;
+  margin-bottom: 6px;
 }
 
 .category-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #ffffff;
 }
@@ -877,11 +953,6 @@ onMounted(() => {
     gap: 16px;
   }
 
-  .categories-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-  }
-
   .features-grid {
     grid-template-columns: 1fr;
   }
@@ -900,10 +971,6 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .categories-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
   .category-icon {
     font-size: 32px;
   }
@@ -913,6 +980,3 @@ onMounted(() => {
   }
 }
 </style>
-
-
-
