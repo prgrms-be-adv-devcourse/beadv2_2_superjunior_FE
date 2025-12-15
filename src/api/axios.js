@@ -150,4 +150,19 @@ export const groupPurchaseApi = {
     },
 };
 
+// 알림 관련 API
+export const notificationApi = {
+    // 알림 목록 조회 (페이지네이션)
+    getNotifications: (page = 0, size = 20, sort = 'createdAt,desc') => {
+        const params = { page, size, sort }
+        return api.get("/notifications", { params })
+    },
+    // 알림 읽음 처리
+    markAsRead: (notificationId) => api.patch(`/notifications/${notificationId}/read`),
+    // 알림 삭제
+    deleteNotification: (notificationId) => api.delete(`/notifications/${notificationId}`),
+    // 전체 알림 삭제
+    deleteAllNotifications: () => api.delete("/notifications"),
+};
+
 export default api;

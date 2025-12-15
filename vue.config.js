@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000'
 module.exports = defineConfig({
   devServer: {
     host: '0.0.0.0',  // 모든 네트워크 인터페이스에서 접근 가능
-    port: 8080,  // 프론트엔드 포트 명시
+    port: 3000,  // 프론트엔드 포트 명시
     proxy: {
       '/api': {
         target: API_BASE_URL,  // 환경 변수 사용
@@ -38,15 +38,15 @@ module.exports = defineConfig({
         }
       },
       '/swagger-ui.html': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
       '/swagger-ui': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
       '/v3/api-docs': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     }
