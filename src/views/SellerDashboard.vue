@@ -78,17 +78,18 @@
         <article class="panel wide">
           <div class="panel-header">
             <h2>정산 내역</h2>
+            <router-link to="/seller/settlement" class="view-all-link">전체보기 →</router-link>
           </div>
           <div class="settlement-list">
             <div v-for="item in settlement.history" :key="item.id" class="settlement-item">
               <div class="settlement-content">
                 <div class="settlement-main">
                   <div class="settlement-date-group">
-                    <span class="settlement-date-label">정산일</span>
+                    <span class="settlement-date-label">일시</span>
                     <span class="settlement-date">{{ item.date }}</span>
                   </div>
                   <div class="settlement-amount-group">
-                    <span class="settlement-amount-label">정산 금액</span>
+                    <span class="settlement-amount-label">금액</span>
                     <span class="settlement-amount">₩{{ (item.amount || 0).toLocaleString() ?? '0' }}</span>
                   </div>
                 </div>
@@ -535,6 +536,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
 import { authAPI } from '@/api/auth'
+import { sellerBalanceApi } from '@/api/axios'
+import { formatDateTime } from '@/utils/timeFormatter'
 
 const router = useRouter()
 
@@ -625,16 +628,66 @@ const accountHolderError = ref('')
 const businessNumberError = ref('')
 
 const settlement = ref({
-  monthlyRevenue: 12500000,
-  pendingAmount: 8500000,
-  totalSettled: 45000000,
-  history: [
-    { id: 1, date: '2025-12-01', amount: 5000000, status: 'completed', statusText: '정산 완료' },
-    { id: 2, date: '2025-11-15', amount: 3200000, status: 'completed', statusText: '정산 완료' },
-    { id: 3, date: '2025-11-01', amount: 7500000, status: 'completed', statusText: '정산 완료' },
-    { id: 4, date: '2025-12-15', amount: 8500000, status: 'pending', statusText: '정산 예정' }
-  ]
+  monthlyRevenue: 0,
+  pendingAmount: 0,
+  totalSettled: 0,
+  history: []
 })
+
+// 정산 내역 조회 (최신 5개)
+const fetchBalanceHistory = async () => {
+  try {
+    const response = await sellerBalanceApi.getBalanceHistory(0, 5)
+    const pageData = response.data.data
+
+    // 백엔드 데이터를 프론트엔드 형식으로 변환
+    settlement.value.history = pageData.content.map(item => ({
+      id: item.sellerBalanceHistoryId,
+      date: formatDateTime(item.createdAt),
+      amount: item.amount,
+      status: item.status === 'CREDIT' ? 'credit' : 'debit',
+      statusText: item.status === 'CREDIT' ? '정산' : '송금'
+    }))
+
+    // 요약 데이터 계산
+    calculateSettlementSummary()
+  } catch (error) {
+    console.error('정산 내역 조회 실패:', error)
+  }
+}
+
+// 정산 요약 계산
+const calculateSettlementSummary = () => {
+  const now = new Date()
+
+  // 이번 달 정산
+  const thisMonthCredit = settlement.value.history
+    .filter(item => {
+      const itemDate = new Date(item.date)
+      return item.status === 'credit' &&
+             itemDate.getMonth() === now.getMonth() &&
+             itemDate.getFullYear() === now.getFullYear()
+    })
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  settlement.value.monthlyRevenue = thisMonthCredit
+
+  // 누적 정산
+  const totalCredit = settlement.value.history
+    .filter(item => item.status === 'credit')
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  // 전체 송금
+  const totalDebit = settlement.value.history
+    .filter(item => item.status === 'debit')
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  settlement.value.totalSettled = totalCredit
+
+  // 정산 예정 금액 = (누적 정산 - 전체 송금)
+  const pendingCalc = totalCredit - totalDebit
+  settlement.value.pendingAmount = pendingCalc >= 30000 ? pendingCalc : 0
+}
 
 // const sellerStats = ref({
 //   totalSales: 3245,
@@ -1203,6 +1256,7 @@ onMounted(() => {
   searchGroupPurchases()
   searchProducts()      // ✅ 여기
   loadOrders()
+  fetchBalanceHistory() // 정산 내역 조회 (최신 5개)
 })
 </script>
 
@@ -1437,6 +1491,18 @@ onMounted(() => {
   font-weight: 700;
   color: #ffffff;
   margin: 0;
+}
+
+.view-all-link {
+  font-size: 14px;
+  color: #999;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.view-all-link:hover {
+  color: #ffffff;
 }
 
 .panel-header .subtitle {
@@ -1728,6 +1794,18 @@ onMounted(() => {
   background: rgba(255, 212, 59, 0.2);
   color: #ffd43b;
   border: 1px solid #ffd43b;
+}
+
+.settlement-status.credit {
+  background: rgba(81, 207, 102, 0.2);
+  color: #51cf66;
+  border: 1px solid #51cf66;
+}
+
+.settlement-status.debit {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
 }
 
 /* 판매 통계 */

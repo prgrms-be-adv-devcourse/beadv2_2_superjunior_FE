@@ -156,5 +156,17 @@ export const cartApi = {
     addToCart: (data) => api.post("/carts", data),
 };
 
+// 판매자 정산 관련 API
+export const sellerBalanceApi = {
+    // 잔액 조회
+    getBalance: () => api.get("/balances"),
+
+    // 정산 내역 조회 (페이지네이션)
+    getBalanceHistory: (page = 0, size = 20, sort = 'createdAt,desc') => {
+        const params = { page, size, sort }
+        return api.get("/balances/history", { params })
+    },
+};
+
 export default api;
 
