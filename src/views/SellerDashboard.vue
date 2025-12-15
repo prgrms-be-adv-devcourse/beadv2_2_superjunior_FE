@@ -289,7 +289,7 @@
             </div>
             <template v-else>
               <div
-                v-for="gp in sellerGroupPurchases.slice(0, 3)"
+                v-for="gp in sellerGroupPurchases"
                 :key="gp.id"
                 class="group-purchase-item"
                 @click="goToGroupPurchase(gp.id)"
