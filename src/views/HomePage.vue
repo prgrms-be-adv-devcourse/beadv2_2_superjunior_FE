@@ -362,38 +362,58 @@ const fetchPopularProducts = async () => {
   return res.data.data.content
 }
 
-//형식 맞추기
+// 형식 맞추기 (GroupPurchaseDocument 기준)
 const mapToProductCard = (gp) => {
+  const product = gp.productDocumentEmbedded || {}
+
   // 카테고리 변환 (백엔드 enum -> 한글)
-  const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+  const categoryCode = product.category
+  const categoryKorean = categoryMap[categoryCode] || categoryCode || '기타'
 
-  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
-  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
-  if (!image || image.trim() === '') {
-    image = categoryImages[gp.category] || categoryImages['PET']
-  }
+  let image = categoryImages[categoryCode] || categoryImages['PET']
 
-  const originalPrice = gp.price || gp.originalPrice || 0
-  const discountedPrice = gp.discountedPrice || gp.discountPrice || originalPrice
-  const discountRate = originalPrice > 0 ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0
+  // 이미지 우선순위
+//  let image = product.originalUrl
+//  if (!image || image.trim() === '') {
+//    image = categoryImages[categoryCode] || categoryImages['PET']
+//  }
+
+  const originalPrice = product.price || 0
+  const discountedPrice = gp.discountedPrice ?? originalPrice
+
+  // 할인율 (백엔드 discountRate 있으면 우선)
+  const discountRate =
+    gp.discountRate != null
+      ? gp.discountRate
+      : originalPrice > 0
+        ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)
+        : 0
 
   return {
-    id: gp.groupPurchaseId || gp.id,
+    // ✅ 유지
+    id: gp.groupPurchaseId,
     title: gp.title,
     subtitle: gp.description,
     category: categoryKorean,
     seller: gp.sellerName || '판매자',
-    image: image,
-    originalPrice: originalPrice,
+    image,
+
+    // 가격
+    originalPrice,
     currentPrice: discountedPrice,
-    discountRate: discountRate,
+    discountRate,
+
+    // 수량
     currentCount: gp.currentQuantity || 0,
     targetCount: gp.maxQuantity || 1,
+
+    // 상태 계산
     timeLeft: calcTimeLeft(gp.endDate),
     hot: (gp.currentQuantity || 0) >= (gp.minQuantity || 0),
     urgent: isUrgent(gp.endDate)
   }
 }
+
 
 //마감 임박
 const endingProducts = ref([])
