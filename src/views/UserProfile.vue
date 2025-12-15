@@ -293,6 +293,15 @@
                       {{ selectGroupPurchase?.category || '-' }}
                     </span>
                   </div>
+                  <button
+                    v-if="selectGroupPurchase"
+                    class="link-btn"
+                    @click="goGroupPurchaseDetail(
+                      selectGroupPurchase.groupPurchaseId || selectGroupPurchase.id
+                    )"
+                  >
+                    공동구매 페이지 →
+                  </button>
                 </div>
               </section>
             </div>
@@ -443,6 +452,15 @@ const viewOrderDetail = async (orderId) => {
     console.error('주문 상세 조회 실패', e)
     alert('주문 상세 조회에 실패했습니다.')
   }
+}
+
+const goGroupPurchaseDetail = (groupPurchaseId) => {
+  if (!groupPurchaseId) return
+
+  router.push({
+    name: 'group-purchase-detail',
+    params: { id: groupPurchaseId }
+  })
 }
 
 const addressForm = ref({
@@ -1820,6 +1838,25 @@ textarea:focus {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+.link-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #ffffff;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.link-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: #ffffff;
 }
 
 .order-detail-col {
