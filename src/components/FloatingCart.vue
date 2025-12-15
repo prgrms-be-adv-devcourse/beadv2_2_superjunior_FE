@@ -5,23 +5,29 @@
       <button class="btn-close" @click="closeCart">×</button>
     </div>
     <div class="cart-body">
-      <div v-if="items.length === 0" class="empty-cart">
+      <div v-if="loading" class="empty-cart">
+        <p>로딩 중...</p>
+      </div>
+      <div v-else-if="items.length === 0" class="empty-cart">
         <p>장바구니가 비어있습니다</p>
         <router-link to="/products" class="btn btn-outline" @click="closeCart">상품 둘러보기</router-link>
       </div>
       <div v-else class="cart-items">
-        <div v-for="item in items" :key="item.productId" class="cart-item">
-          <img :src="item.product.image" :alt="item.product.title" />
-          <div class="item-info">
-            <h4>{{ item.product.title }}</h4>
-            <p class="item-price">₩{{ (item.product.currentPrice * item.quantity).toLocaleString() }}</p>
+        <div v-for="item in items" :key="item.cartId" class="cart-item">
+          <div v-if="item.groupPurchase" class="item-info">
+            <h4>{{ item.groupPurchase.title || '공동구매 상품' }}</h4>
+            <p class="item-price">₩{{ ((item.groupPurchase.discountedPrice || 0) * item.quantity).toLocaleString() }}</p>
             <div class="quantity-control">
-              <button @click.stop="changeQuantity(item.productId, -1)">-</button>
+              <button @click.stop="changeQuantity(item.cartId, -1)">-</button>
               <span>{{ item.quantity }}</span>
-              <button @click.stop="changeQuantity(item.productId, 1)">+</button>
+              <button @click.stop="changeQuantity(item.cartId, 1)">+</button>
             </div>
           </div>
-          <button class="btn-delete" @click.stop="removeItem(item.productId)">×</button>
+          <div v-else class="item-info">
+            <h4>상품 정보 없음</h4>
+            <p class="item-price">수량: {{ item.quantity }}</p>
+          </div>
+          <button class="btn-delete" @click.stop="removeItem(item.cartId)">×</button>
         </div>
       </div>
     </div>
@@ -41,10 +47,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { getProductById } from '@/data/products'
+import { cartApi } from '@/api/axios'
+import { groupPurchaseApi } from '@/api/axios'
 
 const isOpen = ref(false)
 const items = ref([])
+const loading = ref(false)
 let cartUpdateInterval = null
 
 const cartCount = computed(() => {
@@ -56,21 +64,52 @@ const totalQuantity = computed(() => {
 })
 
 const totalPrice = computed(() => {
-  return items.value.reduce((sum, item) => sum + item.product.currentPrice * item.quantity, 0)
+  return items.value.reduce((sum, item) => {
+    const price = item.groupPurchase?.discountedPrice || 0
+    return sum + price * item.quantity
+  }, 0)
 })
 
-const loadCartItems = () => {
-  const stored = JSON.parse(localStorage.getItem('cart') || '[]')
-  items.value = stored
-    .map((item) => {
-      const product = getProductById(item.productId)
-      if (!product) return null
-      return {
-        ...item,
-        product
-      }
-    })
-    .filter(Boolean)
+const loadCartItems = async () => {
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    items.value = []
+    return
+  }
+
+  try {
+    loading.value = true
+    const response = await cartApi.getCart(0, 100)
+    // pageable 응답에서 content 추출
+    const cartData = response.data?.content || response.data?.data || response.data || []
+    
+    // 각 장바구니 항목에 공동구매 정보 가져오기
+    const itemsWithDetails = await Promise.all(
+      cartData.map(async (cartItem) => {
+        try {
+          const gpResponse = await groupPurchaseApi.getGroupPurchaseById(cartItem.groupPurchaseId)
+          const groupPurchase = gpResponse.data?.data || gpResponse.data
+          return {
+            ...cartItem,
+            groupPurchase
+          }
+        } catch (error) {
+          console.error('공동구매 정보 조회 실패:', error)
+          return {
+            ...cartItem,
+            groupPurchase: null
+          }
+        }
+      })
+    )
+    
+    items.value = itemsWithDetails
+  } catch (error) {
+    console.error('장바구니 조회 실패:', error)
+    items.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const openCart = () => {
@@ -82,44 +121,35 @@ const closeCart = () => {
   isOpen.value = false
 }
 
-const changeQuantity = (productId, delta) => {
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-  const updatedCart = cart.map(item => {
-    if (item.productId === productId) {
-      const quantity = Math.max(1, (item.quantity || 1) + delta)
-      return { ...item, quantity }
-    }
-    return item
-  })
-  localStorage.setItem('cart', JSON.stringify(updatedCart))
-  loadCartItems()
-}
-
-const removeItem = (productId) => {
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-  const updatedCart = cart.filter(item => item.productId !== productId)
-  localStorage.setItem('cart', JSON.stringify(updatedCart))
-  loadCartItems()
-}
-
-const handleStorageChange = (e) => {
-  if (e.key === 'cart') {
-    loadCartItems()
+const changeQuantity = (cartId, delta) => {
+  // TODO: API 호출로 수량 변경
+  const item = items.value.find(item => item.cartId === cartId)
+  if (item) {
+    item.quantity = Math.max(1, item.quantity + delta)
   }
+}
+
+const removeItem = (cartId) => {
+  // TODO: API 호출로 삭제
+  items.value = items.value.filter(item => item.cartId !== cartId)
+}
+
+const handleCartUpdate = () => {
+  loadCartItems()
 }
 
 onMounted(() => {
   loadCartItems()
-  // localStorage 변경 감지
-  window.addEventListener('storage', handleStorageChange)
+  // 장바구니 업데이트 이벤트 리스너
+  window.addEventListener('cart-updated', handleCartUpdate)
   // 주기적으로 장바구니 업데이트
   cartUpdateInterval = setInterval(() => {
     loadCartItems()
-  }, 1000)
+  }, 5000) // 5초마다 업데이트
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('cart-updated', handleCartUpdate)
   if (cartUpdateInterval) {
     clearInterval(cartUpdateInterval)
   }

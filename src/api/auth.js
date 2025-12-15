@@ -96,6 +96,12 @@ export const authAPI = {
         return response.data;
     },
 
+    // 포인트 잔액 조회
+    getPoints: async() => {
+        const response = await api.get(`/points`)
+        return response.data;
+    },
+
     searchProducts: async ({
         keyword = '',
         category = '',

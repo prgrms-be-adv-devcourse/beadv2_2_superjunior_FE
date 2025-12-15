@@ -156,7 +156,20 @@
               </div>
               <div class="product-footer">
                 <span class="time-left urgent-time">⏰ {{ product.timeLeft }}</span>
-                <button class="btn btn-primary btn-sm">참여하기</button>
+              <div class="footer-actions">
+                <button
+                  class="btn btn-outline btn-sm"
+                  @click.stop="addToCart(product)"
+                >
+                  장바구니
+                </button>
+                <button
+                  class="btn btn-primary btn-sm"
+                  @click.stop="goToProduct(product.id)"
+                >
+                  참여하기
+                </button>
+              </div>
               </div>
             </div>
           </div>
@@ -248,7 +261,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { groupPurchaseApi } from '@/api/axios'
+import { groupPurchaseApi, cartApi } from '@/api/axios'
 
 const router = useRouter()
 
@@ -432,6 +445,22 @@ const filterByCategory = (categoryId) => {
 
 const goToProduct = (productId) => {
   router.push({ name: 'group-purchase-detail', params: { id: productId } })
+}
+
+const addToCart = async (product) => {
+  try {
+    await cartApi.addToCart({
+      groupPurchaseId: product.id,
+      quantity: 1
+    })
+    alert('장바구니에 담았습니다.')
+    // FloatingCart 업데이트 이벤트 발생
+    window.dispatchEvent(new CustomEvent('cart-updated'))
+  } catch (error) {
+    console.error('장바구니 담기 실패:', error)
+    const message = error.response?.data?.message || '장바구니 담기에 실패했습니다.'
+    alert(message)
+  }
 }
 
 onMounted(async () => {
@@ -848,6 +877,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .time-left {
@@ -882,6 +912,11 @@ onBeforeUnmount(() => {
 .btn-sm {
   padding: 8px 16px;
   font-size: 14px;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* 특징 섹션 */

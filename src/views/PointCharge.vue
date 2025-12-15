@@ -92,39 +92,18 @@
 import { ref, onMounted } from 'vue'
 import { v4  as uuidv4 } from 'uuid';
 import api from '@/api/axios'
+import { authAPI } from '@/api/auth'
 // import { useRouter } from 'vue-router'
 
 // const router = useRouter()
 
-const userPoints = ref(50000)
+const userPoints = ref(0)
 const selectedAmount = ref(10000)
 const customAmount = ref(null)
 
 const presetAmounts = [10000, 30000, 50000, 100000, 200000, 500000]
 
-const chargeHistory = ref([
-  {
-    id: 1,
-    date: '2025-12-10 14:30',
-    amount: 50000,
-    status: 'completed',
-    statusText: '충전 완료'
-  },
-  {
-    id: 2,
-    date: '2025-12-05 09:15',
-    amount: 100000,
-    status: 'completed',
-    statusText: '충전 완료'
-  },
-  {
-    id: 3,
-    date: '2025-12-01 18:20',
-    amount: 30000,
-    status: 'failed',
-    statusText: '충전 실패'
-  }
-])
+const chargeHistory = ref([])
 
 let tossPayments = null
 
@@ -145,7 +124,7 @@ const loadTossPayments = async () => {
     }
 
     // TODO: 실제 클라이언트 키로 교체 필요
-    const clientKey = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq'
+    const clientKey = 'test_ck_0RnYX2w532qpnn7EPAAN8NeyqApQ'
     tossPayments = window.TossPayments(clientKey)
   } catch (error) {
     console.error('토스페이먼트 SDK 로드 실패:', error)
@@ -195,7 +174,7 @@ const requestCharge = async () => {
       orderName: orderName,
       customerName: localStorage.getItem('user_name') || '사용자',
       successUrl: `${window.location.origin}/point/charge/success`,
-      failUrl: `${window.location.origin}/point/charge/fail`,
+      failUrl: `${window.location.origin}/point/charge/fail`, 
     })
 
   } catch (error) {
@@ -210,11 +189,24 @@ const requestCharge = async () => {
   }
 }
 
+const fetchUserPoints = async () => {
+  try {
+    const response = await authAPI.getPoints()
+    const data = response?.data || response
+    if (data?.pointBalance !== undefined) {
+      userPoints.value = data.pointBalance || 0
+    } else if (data?.point !== undefined) {
+      // 하위 호환
+      userPoints.value = data.point || 0
+    }
+  } catch (error) {
+    console.error('포인트 조회 실패:', error)
+  }
+}
+
 onMounted(() => {
   loadTossPayments()
-
-  // TODO: 사용자 포인트 조회 API 호출
-  // fetchUserPoints()
+  fetchUserPoints()
 })
 </script>
 

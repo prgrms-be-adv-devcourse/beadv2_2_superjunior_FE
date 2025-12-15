@@ -17,34 +17,44 @@
 
       <section class="cart-content">
         <article class="cart-items">
-          <div v-if="items.length === 0" class="empty-state">
+          <div v-if="loading" class="empty-state">
+            <p>장바구니를 불러오는 중...</p>
+          </div>
+          <div v-else-if="items.length === 0" class="empty-state">
             <p>장바구니가 비어 있어요.</p>
             <router-link class="btn btn-primary" to="/products">상품 둘러보기</router-link>
           </div>
           <div
             v-for="item in items"
-            :key="item.productId"
+            :key="item.cartId"
             class="cart-item"
           >
-            <img :src="item.product.image" :alt="item.product.title" />
             <div class="item-body">
               <div class="item-head">
-                <p class="category">{{ item.product.category }}</p>
-                <h2>{{ item.product.title }}</h2>
-                <p class="option">{{ item.option }}</p>
+                <p class="cart-id">장바구니 ID: {{ item.cartId }}</p>
+                <p class="member-id">회원 ID: {{ item.memberId }}</p>
+                <h2 v-if="item.groupPurchase">{{ item.groupPurchase.title || '공동구매 상품' }}</h2>
+                <h2 v-else>공동구매 ID: {{ item.groupPurchaseId }}</h2>
+                <p class="option">수량: {{ item.quantity }}개</p>
               </div>
               <div class="item-meta">
-                <p class="price">₩{{ (item.product.currentPrice * item.quantity).toLocaleString() }}</p>
+                <p v-if="item.groupPurchase" class="price">
+                  ₩{{ ((item.groupPurchase.discountedPrice || 0) * item.quantity).toLocaleString() }}
+                </p>
+                <p v-else class="price">가격 정보 없음</p>
                 <p class="quantity-label">수량</p>
                 <div class="quantity-control">
-                  <button @click="changeQuantity(item.productId, -1)">-</button>
+                  <button @click="changeQuantity(item.cartId, -1)">-</button>
                   <span>{{ item.quantity }}</span>
-                  <button @click="changeQuantity(item.productId, 1)">+</button>
+                  <button @click="changeQuantity(item.cartId, 1)">+</button>
                 </div>
               </div>
               <div class="item-footer">
-                <span>목표 {{ item.product.targetCount }}명 중 {{ item.product.currentCount }}명 참여</span>
-                <button class="link-btn" @click="removeItem(item.productId)">삭제</button>
+                <div class="date-info">
+                  <span>생성일: {{ formatDate(item.createdAt) }}</span>
+                  <span>수정일: {{ formatDate(item.updatedAt) }}</span>
+                </div>
+                <button class="link-btn" @click="removeItem(item.cartId)">삭제</button>
               </div>
             </div>
           </div>
@@ -80,38 +90,78 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { cartItemsMock, getProductById } from '@/data/products'
+import { ref, computed, onMounted } from 'vue'
+import { cartApi } from '@/api/axios'
+import { groupPurchaseApi } from '@/api/axios'
 
-const items = ref(loadCartItems())
+const items = ref([])
+const loading = ref(false)
 
-function loadCartItems() {
-  const stored = JSON.parse(localStorage.getItem('cart') || 'null')
-  const source = stored && stored.length > 0 ? stored : cartItemsMock
-  return source
-    .map((item) => {
-      const product = getProductById(item.productId)
-      if (!product) return null
-      return {
-        ...item,
-        option: item.option || '기본 옵션',
-        product
-      }
-    })
-    .filter(Boolean)
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const loadCartItems = async () => {
+  try {
+    loading.value = true
+    const response = await cartApi.getCart(0, 100)
+    // pageable 응답에서 content 추출
+    const cartData = response.data?.content || response.data?.data || response.data || []
+    
+    // 각 장바구니 항목에 공동구매 정보 가져오기
+    const itemsWithDetails = await Promise.all(
+      cartData.map(async (cartItem) => {
+        try {
+          const gpResponse = await groupPurchaseApi.getGroupPurchaseById(cartItem.groupPurchaseId)
+          const groupPurchase = gpResponse.data?.data || gpResponse.data
+          return {
+            ...cartItem,
+            groupPurchase
+          }
+        } catch (error) {
+          console.error('공동구매 정보 조회 실패:', error)
+          return {
+            ...cartItem,
+            groupPurchase: null
+          }
+        }
+      })
+    )
+    
+    items.value = itemsWithDetails
+  } catch (error) {
+    console.error('장바구니 조회 실패:', error)
+    items.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const totalPrice = computed(() => {
   return items.value.reduce(
-    (sum, item) => sum + item.product.currentPrice * item.quantity,
+    (sum, item) => {
+      const price = item.groupPurchase?.discountedPrice || 0
+      return sum + price * item.quantity
+    },
     0
   )
 })
 
 const totalDiscount = computed(() => {
   return items.value.reduce(
-    (sum, item) =>
-      sum + (item.product.originalPrice - item.product.currentPrice) * item.quantity,
+    (sum, item) => {
+      const originalPrice = item.groupPurchase?.price || item.groupPurchase?.discountedPrice || 0
+      const discountedPrice = item.groupPurchase?.discountedPrice || 0
+      return sum + (originalPrice - discountedPrice) * item.quantity
+    },
     0
   )
 })
@@ -124,26 +174,22 @@ const totalQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + item.quantity, 0)
 })
 
-const changeQuantity = (productId, delta) => {
-  items.value = items.value
-    .map((item) => {
-      if (item.productId !== productId) return item
-      const quantity = Math.max(1, item.quantity + delta)
-      return { ...item, quantity }
-    })
-  localStorage.setItem(
-    'cart',
-    JSON.stringify(items.value.map(({ productId: id, quantity }) => ({ productId: id, quantity })))
-  )
+const changeQuantity = (cartId, delta) => {
+  // TODO: API 호출로 수량 변경
+  const item = items.value.find(item => item.cartId === cartId)
+  if (item) {
+    item.quantity = Math.max(1, item.quantity + delta)
+  }
 }
 
-const removeItem = (productId) => {
-  items.value = items.value.filter((item) => item.productId !== productId)
-  localStorage.setItem(
-    'cart',
-    JSON.stringify(items.value.map(({ productId: id, quantity }) => ({ productId: id, quantity })))
-  )
+const removeItem = (cartId) => {
+  // TODO: API 호출로 삭제
+  items.value = items.value.filter(item => item.cartId !== cartId)
 }
+
+onMounted(() => {
+  loadCartItems()
+})
 </script>
 
 <style scoped>
@@ -238,9 +284,24 @@ const removeItem = (productId) => {
   gap: 12px;
 }
 
+.cart-id,
+.member-id {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
 .category {
   color: #ffffff;
   font-weight: 600;
+}
+
+.date-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #999;
 }
 
 .item-body h2 {

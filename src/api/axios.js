@@ -136,4 +136,15 @@ export const groupPurchaseApi = {
     },
 };
 
+// 주문 관련 API
+export const orderApi = {
+    createOrder: (data) => api.post("/orders", data),
+};
+
+// 장바구니 관련 API
+export const cartApi = {
+    getCart: (page = 0, size = 100) => api.get("/carts", { params: { page, size } }),
+    addToCart: (data) => api.post("/carts", data),
+};
+
 export default api;

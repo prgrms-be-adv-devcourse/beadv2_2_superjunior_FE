@@ -591,6 +591,20 @@ onMounted(async () => {
         localStorage.setItem('member_id', profileData.memberId)
       }
     }
+
+    // 포인트 잔액 별도 조회
+    try {
+      const pointResponse = await authAPI.getPoints()
+      const pointData = pointResponse?.data || pointResponse
+      if (pointData?.pointBalance !== undefined) {
+        userInfo.value.point = pointData.pointBalance || 0
+      } else if (pointData?.point !== undefined) {
+        // 하위 호환
+        userInfo.value.point = pointData.point || 0
+      }
+    } catch (pointError) {
+      console.error('포인트 조회 실패:', pointError)
+    }
   } catch (error) {
     console.error('프로필 조회 실패:', error)
     // 프로필 조회 실패해도 localStorage의 정보 사용

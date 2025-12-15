@@ -113,7 +113,7 @@
               </span>
             </div>
             <div class="gp-col gp-col-action">
-              <!-- 내 공동구매 목록이거나 소유자인 경우 버튼 표시 -->
+              <!-- 소유자인 경우 관리 버튼, 아닌 경우 참여/장바구니 -->
               <div v-if="!route.query.sellerId || isOwner(gp)" class="action-buttons">
                 <!-- SCHEDULED (예정됨): 수정 + 삭제 -->
                 <template v-if="gp.status === 'SCHEDULED'">
@@ -147,7 +147,22 @@
                   <span>{{ expandedId === gp.id ? '▼' : '▶' }}</span>
                 </button>
               </div>
-              <span v-else class="no-action">-</span>
+              <div v-else class="action-buttons">
+                <button
+                  class="btn btn-sm btn-outline"
+                  :disabled="gp.status !== 'OPEN'"
+                  @click.stop="addToCartFromList(gp.id)"
+                >
+                  장바구니
+                </button>
+                <button
+                  class="btn btn-sm btn-primary"
+                  :disabled="gp.status !== 'OPEN'"
+                  @click.stop="goToDetail(gp.id)"
+                >
+                  참여하기
+                </button>
+              </div>
             </div>
           </div>
           
@@ -214,7 +229,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { groupPurchaseApi } from '@/api/axios'
+import { groupPurchaseApi, cartApi } from '@/api/axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -398,13 +413,13 @@ const handleCardClick = (id, gp) => {
     expandedId.value = expandedId.value === id ? null : id
   } else {
     // 일반 사용자이거나 소유자가 아닌 경우 상세 페이지로 이동
-    expandedId.value = expandedId.value === id ? null : id
+    goToDetail(id)
   }
 }
 
-// const goToDetail = (id) => {
-//   router.push({ name: 'group-purchase-detail', params: { id } })
-// }
+const goToDetail = (id) => {
+  router.push({ name: 'group-purchase-detail', params: { id } })
+}
 
 const goToCreate = () => {
   router.push({ name: 'group-purchase-create' })
@@ -518,6 +533,23 @@ const getOrdersForGroupPurchase = (groupId) => {
   }
   
   return orders
+}
+
+// 장바구니 담기 (목록, 수량 기본 1)
+const addToCartFromList = async (groupPurchaseId) => {
+  try {
+    await cartApi.addToCart({
+      groupPurchaseId,
+      quantity: 1
+    })
+    alert('장바구니에 담았습니다.')
+    // FloatingCart 업데이트 이벤트 발생
+    window.dispatchEvent(new CustomEvent('cart-updated'))
+  } catch (error) {
+    console.error('장바구니 담기 실패:', error)
+    const errorMessage = error.response?.data?.message || '장바구니 담기에 실패했습니다.'
+    alert(errorMessage)
+  }
 }
 
 const formatDate = (dateString) => {
@@ -889,7 +921,6 @@ watch(() => route.query.sellerId, () => {
     display: none;
   }
 }
-
 @media (max-width: 768px) {
   .gp-list-header,
   .gp-list-row {
@@ -980,6 +1011,16 @@ watch(() => route.query.sellerId, () => {
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.btn-primary {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.btn-primary:hover {
+  background: #f0f0f0;
+  color: #0a0a0a;
 }
 
 .no-orders {
