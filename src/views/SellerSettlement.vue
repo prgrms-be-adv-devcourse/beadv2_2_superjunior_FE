@@ -15,9 +15,9 @@
           </div>
         </div>
         <div class="summary-card">
-          <div class="card-icon">💸</div>
+          <div class="card-icon">⏳</div>
           <div class="card-content">
-            <span class="card-label">이번 달 송금</span>
+            <span class="card-label">정산 예정 금액</span>
             <span class="card-value highlight">₩{{ summary.pendingAmount.toLocaleString() }}</span>
           </div>
         </div>
@@ -113,6 +113,7 @@
           <ul class="info-list">
             <li>정산: 판매 수익이 판매자 잔액에 추가되는 내역입니다</li>
             <li>송금: 판매자 계좌로 출금된 금액입니다</li>
+            <li>정산 예정 금액: 누적 정산에서 전체 송금을 제외한 금액 (3만원 미만 시 송금 불가)</li>
             <li>정산은 매월 1일에 진행됩니다</li>
             <li>문의사항은 고객센터로 연락주세요</li>
           </ul>
@@ -208,19 +209,28 @@ const calculateSummary = () => {
   })
 
   // 이번 달 정산 총액
-  summary.value.monthlyRevenue = thisMonth
+  const thisMonthCredit = thisMonth
     .filter(item => item.status === 'credit')
     .reduce((sum, item) => sum + item.amount, 0)
 
-  // 이번 달 송금 총액
-  summary.value.pendingAmount = thisMonth
+  summary.value.monthlyRevenue = thisMonthCredit
+
+  // 누적 정산 총액
+  const totalCredit = settlements.value
+    .filter(item => item.status === 'credit')
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  // 전체 송금 총액
+  const totalDebit = settlements.value
     .filter(item => item.status === 'debit')
     .reduce((sum, item) => sum + item.amount, 0)
 
-  // 누적 정산 총액
-  summary.value.totalSettled = settlements.value
-    .filter(item => item.status === 'credit')
-    .reduce((sum, item) => sum + item.amount, 0)
+  summary.value.totalSettled = totalCredit
+
+  // 정산 예정 금액 = (누적 정산 - 전체 송금)
+  // 3만원 미만이면 0, 3만원 이상이면 그 금액
+  const pendingCalc = totalCredit - totalDebit
+  summary.value.pendingAmount = pendingCalc >= 30000 ? pendingCalc : 0
 }
 
 const filteredSettlements = computed(() => {
