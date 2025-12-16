@@ -228,7 +228,6 @@ const loadProduct = async () => {
       image: productImage,
       images: productImages,
     }
-    console.log('상품 정보 로드 완료 - sellerId:', productData.sellerId)
   } catch (error) {
     console.error('상품 조회 실패:', error)
     product.value = null
@@ -237,7 +236,6 @@ const loadProduct = async () => {
 
 const goToSeller = () => {
   if (!product.value) return
-  console.log('판매자 ID로 이동:', product.value.sellerId)
   router.push({ name: 'seller-profile', params: { id: product.value.sellerId } })
 }
 

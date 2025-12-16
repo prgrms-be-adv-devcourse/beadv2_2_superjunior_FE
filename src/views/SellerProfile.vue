@@ -10,9 +10,9 @@
       </section>
 
       <section class="seller-products-section">
-        <h2>판매 상품</h2>
+        <h2>공동구매 목록</h2>
         <div v-if="sellerProducts.length === 0" class="empty-state">
-          <p>등록된 상품이 없습니다.</p>
+          <p>등록된 공동구매가 없습니다.</p>
         </div>
         <div v-else class="products-grid">
           <div
@@ -30,8 +30,8 @@
               <div class="product-price-info">
                 <span class="current-price">₩{{ product.currentPrice?.toLocaleString() }}</span>
               </div>
-              <div v-if="product.stock !== undefined" class="product-stock">
-                재고 {{ product.stock }}개
+              <div v-if="product.status" class="product-status">
+                상태: {{ product.status }}
               </div>
             </div>
           </div>
@@ -102,57 +102,52 @@ const categoryImages = {
 }
 
 const loadProducts = async () => {
-  console.log('SellerProfile - 받은 판매자 ID:', props.id)
   try {
-    // 검색 API를 사용해서 특정 판매자의 상품 조회 시도
-    const response = await api.get(`/searches/product/search`, {
+    // 공동구매 검색 API를 사용해서 특정 판매자의 공동구매 조회
+    const response = await api.get(`/searches/purchase/search/seller`, {
       params: {
         sellerId: props.id,
+        keyword: '',
+        category: '',
         page: 0,
         size: 100
       }
     })
-    console.log('검색 API 전체 응답:', response.data)
     const productsData = response.data.data ?? response.data
-    console.log('productsData:', productsData)
     const productsList = Array.isArray(productsData) ? productsData : productsData.content ?? []
-    console.log('productsList:', productsList)
-    console.log('첫 번째 상품:', productsList[0])
 
-    // 첫 번째 상품에서 판매자 이름 가져오기
+    // 첫 번째 공동구매에서 판매자 이름 가져오기
     if (productsList.length > 0) {
       seller.value = {
         name: productsList[0].sellerName || productsList[0].seller?.name || '판매자'
       }
-      console.log('판매자 이름:', seller.value.name)
     }
 
-    sellerProducts.value = productsList.map(product => {
-      const categoryKorean = categoryMap[product.category] || product.category || '기타'
-      let productImage = product.imageUrl || product.image
-      if (!productImage || productImage.trim() === '') {
-        productImage = categoryImages[product.category] || categoryImages['PET']
+    sellerProducts.value = productsList.map(purchase => {
+      const categoryKorean = categoryMap[purchase.category] || purchase.category || '기타'
+      let purchaseImage = purchase.imageUrl || purchase.image
+      if (!purchaseImage || purchaseImage.trim() === '') {
+        purchaseImage = categoryImages[purchase.category] || categoryImages['PET']
       }
 
       return {
-        id: product.productId,
-        title: product.name,
+        id: purchase.purchaseId || purchase.id,
+        title: purchase.title || purchase.name,
         category: categoryKorean,
-        price: product.price,
-        currentPrice: product.price,
-        image: productImage,
-        stock: product.stock
+        price: purchase.targetPrice || purchase.price,
+        currentPrice: purchase.targetPrice || purchase.price,
+        image: purchaseImage,
+        status: purchase.status
       }
     })
   } catch (error) {
-    console.error('판매자 상품 목록 조회 실패:', error)
-    console.error('에러 상세:', error.response?.data)
+    console.error('판매자 공동구매 목록 조회 실패:', error)
     sellerProducts.value = []
   }
 }
 
 const goToProduct = (id) => {
-  router.push({ name: 'product-detail', params: { id } })
+  router.push({ name: 'group-purchase-detail', params: { id } })
 }
 
 onMounted(() => {
@@ -290,10 +285,14 @@ watch(
   color: #ffffff;
 }
 
-.product-stock {
+.product-status {
   font-size: 13px;
   color: #a0a0a0;
   margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  display: inline-block;
 }
 
 .notice-list {
