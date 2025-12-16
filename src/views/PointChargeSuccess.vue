@@ -68,7 +68,7 @@ onMounted(async () => {
     orderId.value = data.orderId
 
     const pointRes = await authAPI.getPoints()
-    totalPoints.value = chargeRes.data.getPointBalance
+    totalPoints.value = Number(pointRes.data.pointBalance)
   } catch (error) {
     console.error('결제 승인 실패:', error)
     alert(
