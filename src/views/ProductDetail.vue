@@ -236,7 +236,7 @@ const loadProduct = async () => {
 
 const goToSeller = () => {
   if (!product.value) return
-  router.push({ name: 'seller', params: { id: product.value.sellerId } })
+  router.push({ name: 'seller-profile', params: { id: product.value.sellerId } })
 }
 
 const handleImageError = (e) => {
