@@ -18,16 +18,26 @@
             <h4>{{ item.groupPurchase.title || '공동구매 상품' }}</h4>
             <p class="item-price">₩{{ ((item.groupPurchase.discountedPrice || 0) * item.quantity).toLocaleString() }}</p>
             <div class="quantity-control">
-              <button @click.stop="changeQuantity(item.cartId, -1)">-</button>
+              <button 
+                @click.stop="changeQuantity(item.cartId, -1)"
+                :disabled="updatingItems.has(item.cartId) || item.quantity <= 1"
+              >-</button>
               <span>{{ item.quantity }}</span>
-              <button @click.stop="changeQuantity(item.cartId, 1)">+</button>
+              <button 
+                @click.stop="changeQuantity(item.cartId, 1)"
+                :disabled="updatingItems.has(item.cartId)"
+              >+</button>
             </div>
           </div>
           <div v-else class="item-info">
             <h4>상품 정보 없음</h4>
             <p class="item-price">수량: {{ item.quantity }}</p>
           </div>
-          <button class="btn-delete" @click.stop="removeItem(item.cartId)">×</button>
+          <button 
+            class="btn-delete" 
+            @click.stop="removeItem(item.cartId)"
+            :disabled="updatingItems.has(item.cartId)"
+          >×</button>
         </div>
       </div>
     </div>
@@ -53,6 +63,7 @@ import { groupPurchaseApi } from '@/api/axios'
 const isOpen = ref(false)
 const items = ref([])
 const loading = ref(false)
+const updatingItems = ref(new Set()) // 수정 중인 항목 ID들
 let cartUpdateInterval = null
 
 const cartCount = computed(() => {
@@ -127,17 +138,72 @@ const closeCart = () => {
   isOpen.value = false
 }
 
-const changeQuantity = (cartId, delta) => {
-  // TODO: API 호출로 수량 변경
+const changeQuantity = async (cartId, delta) => {
   const item = items.value.find(item => item.cartId === cartId)
-  if (item) {
-    item.quantity = Math.max(1, item.quantity + delta)
+  if (!item) return
+  
+  const newQuantity = Math.max(1, item.quantity + delta)
+  if (newQuantity === item.quantity) return // 수량이 변경되지 않으면 종료
+  
+  // 업데이트 중 표시
+  updatingItems.value.add(cartId)
+  
+  try {
+    const requestData = {
+      cartId,
+      quantity: newQuantity
+    }
+    
+    const response = await cartApi.updateCart(requestData)
+    
+    // PATCH 응답에서 업데이트된 데이터 사용
+    // ResponseDto<CartInfo> 구조: response.data.data 또는 response.data
+    const updatedCartItem = response.data?.data || response.data
+    
+    if (updatedCartItem && updatedCartItem.cartId) {
+      // 로컬 상태만 업데이트 (GET 요청 없이)
+      const itemIndex = items.value.findIndex(i => i.cartId === cartId)
+      if (itemIndex !== -1) {
+        // 응답 데이터로 수량만 업데이트 (공동구매 정보는 유지)
+        items.value[itemIndex].quantity = updatedCartItem.quantity
+        items.value[itemIndex].updatedAt = updatedCartItem.updatedAt
+      }
+    } else {
+      // 응답이 예상과 다르면 전체 장바구니 다시 로드
+      await loadCartItems()
+    }
+  } catch (error) {
+    console.error('장바구니 수량 변경 실패:', error)
+    // 에러 발생 시 전체 장바구니 다시 로드
+    await loadCartItems()
+  } finally {
+    updatingItems.value.delete(cartId)
   }
 }
 
-const removeItem = (cartId) => {
-  // TODO: API 호출로 삭제
-  items.value = items.value.filter(item => item.cartId !== cartId)
+const removeItem = async (cartId) => {
+  // 업데이트 중 표시
+  updatingItems.value.add(cartId)
+  
+  try {
+    const requestData = {
+      cartId
+    }
+    
+    await cartApi.deleteFromCart(requestData)
+    
+    // 삭제 성공 시 로컬 상태에서 제거
+    items.value = items.value.filter(item => item.cartId !== cartId)
+    
+    // 장바구니 업데이트 이벤트 발생
+    window.dispatchEvent(new CustomEvent('cart-updated'))
+  } catch (error) {
+    console.error('장바구니 항목 삭제 실패:', error)
+    // 에러 발생 시 전체 장바구니 다시 로드
+    await loadCartItems()
+  } finally {
+    updatingItems.value.delete(cartId)
+  }
 }
 
 const handleCartUpdate = () => {
@@ -298,10 +364,16 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
 }
 
-.quantity-control button:hover {
+.quantity-control button:hover:not(:disabled) {
   background: #2a2a2a;
+}
+
+.quantity-control button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .quantity-control span {
@@ -330,9 +402,14 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 
-.btn-delete:hover {
+.btn-delete:hover:not(:disabled) {
   background: #2a2a2a;
   color: #ff6b6b;
+}
+
+.btn-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .cart-footer {
