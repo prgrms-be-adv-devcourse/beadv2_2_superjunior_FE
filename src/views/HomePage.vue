@@ -79,7 +79,6 @@
             <div class="product-info">
               <div class="product-category">{{ product.category }}</div>
               <h3 class="product-title">{{ product.title }}</h3>
-              <div class="product-seller">판매자: {{ product.seller }}</div>
               <div class="product-price-info">
                 <div class="price-row">
                   <span class="original-price">₩{{ product.originalPrice.toLocaleString() }}</span>
@@ -392,7 +391,7 @@ const isUrgent = (endDate) => {
 
 //진행 중인 공동구매 중 참여 수량이 제일 많은 항목 불러오기
 const fetchPopularProducts = async () => {
-  const res = await groupPurchaseApi.searchAllGroupPurchases({
+  const res = await groupPurchaseApi.searchGroupPurchases({
     status: 'OPEN',
     sort: 'currentQuantity,desc',
     size: 3
@@ -403,7 +402,7 @@ const fetchPopularProducts = async () => {
 
 // 형식 맞추기 (GroupPurchaseDocument 기준)
 const mapToProductCard = (gp) => {
-  const product = gp.productDocumentEmbedded || {}
+  const product = gp.productSearchInfo || {}
 
   // 카테고리 변환 (백엔드 enum -> 한글)
   const categoryCode = product.category
@@ -459,7 +458,7 @@ const mapToProductCard = (gp) => {
 const endingProducts = ref([])
 
 const fetchEndingProducts = async () => {
-  const res = await groupPurchaseApi.searchAllGroupPurchases({
+  const res = await groupPurchaseApi.searchGroupPurchases({
     status: 'OPEN',
     sort: 'endDate,asc',
     size: 3
@@ -472,9 +471,9 @@ const fetchEndingProducts = async () => {
 const newProducts = ref([])
 
 const fetchNewProducts = async () => {
-  const res = await groupPurchaseApi.searchAllGroupPurchases({
+  const res = await groupPurchaseApi.searchGroupPurchases({
     status: 'OPEN',
-    sort: 'startDate,desc',
+    sort: 'updatedAt,desc',
     size: 3
   })
 

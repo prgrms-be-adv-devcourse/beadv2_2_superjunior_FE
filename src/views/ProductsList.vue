@@ -336,7 +336,7 @@ const getTimeLeft = (endDate) => {
 
 //형식 맞추기
 const mapToProductCard = (gp) => {
-  const p = gp.productDocumentEmbedded || {}
+  const p = gp.productSearchInfo || {}
 
   // ✅ 이미지 우선순위: 상품 이미지 → 카테고리 기본 이미지
   let image = categoryImages[p.category]
@@ -370,7 +370,7 @@ const mapToProductCard = (gp) => {
 const loadProducts = async () => {
   loading.value = true
   try {
-    const res = await groupPurchaseApi.searchAllGroupPurchases({
+    const res = await groupPurchaseApi.searchGroupPurchases({
                          keyword: keyword.value,
                          status: selectedStatus.value,
                          category: selectedCategory.value,

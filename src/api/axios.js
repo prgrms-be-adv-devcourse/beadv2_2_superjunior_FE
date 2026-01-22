@@ -196,11 +196,12 @@ export const groupPurchaseApi = {
     keyword = "",
     status = "OPEN",
     category = "",
+    sellerId = null,
     page = 0,
     size = 10,
     sort,
   } = {}) => {
-    const params = { keyword, status, category, page, size };
+    const params = { keyword, status, sellerId, category, page, size };
     if (sort) params.sort = sort;
     return api.get("/searches/purchase/search", { params });
   },
@@ -215,7 +216,7 @@ export const groupPurchaseApi = {
     } = {}) => {
       const params = { keyword, status, category, page, size };
       if (sort) params.sort = sort;
-      return api.get("/searches/purchase/search/all", { params });
+      return api.get("/searches/purchase/search/seller", { params });
     },
 };
 
