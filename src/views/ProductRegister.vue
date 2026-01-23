@@ -107,6 +107,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { productApi } from '@/api/axios'
+import { generateUUID } from '@/utils/uuid'
 
 const router = useRouter()
 
@@ -120,6 +121,7 @@ const form = ref({
 })
 
 const loading = ref(false)
+const currentIdempotencyKey = ref('')
 
 const isFormValid = computed(() => {
   return (
@@ -138,6 +140,32 @@ const handleCancel = () => {
   }
 }
 
+const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
+  let lastError = null
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await requestFn()
+    } catch (error) {
+      lastError = error
+      const isRetryable =
+        !error.response ||
+        error.response.status >= 500 ||
+        error.code === 'ECONNABORTED' ||
+        error.code === 'ERR_NETWORK'
+
+      if (!isRetryable || attempt === maxRetries - 1) {
+        throw error
+      }
+
+      const waitTime = delay * Math.pow(2, attempt)
+      await new Promise(resolve => setTimeout(resolve, waitTime))
+    }
+  }
+
+  throw lastError
+}
+
 const handleSubmit = async () => {
   if (!isFormValid.value) {
     alert('모든 필수 항목을 입력해주세요.')
@@ -146,6 +174,10 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
+    if (!currentIdempotencyKey.value) {
+      currentIdempotencyKey.value = generateUUID()
+    }
+
     // 백엔드 API 스펙에 맞게 데이터 구성
     const requestData = {
       name: form.value.title,
@@ -153,14 +185,16 @@ const handleSubmit = async () => {
       category: form.value.category,
       description: form.value.description,
       stock: form.value.stock,
-      originalUrl: form.value.originalUrl
+      originalUrl: form.value.originalUrl,
+      idempotencyKey: currentIdempotencyKey.value
     }
 
     // API 호출
-    const response = await productApi.createProduct(requestData)
+    const response = await retryRequest(() => productApi.createProduct(requestData))
     console.log('상품 등록 성공:', response.data)
 
     alert('상품이 성공적으로 등록되었습니다!')
+    currentIdempotencyKey.value = ''
     router.push('/seller/products')
   } catch (error) {
     console.error('Product registration error:', error)

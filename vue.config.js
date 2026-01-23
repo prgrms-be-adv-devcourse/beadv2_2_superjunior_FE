@@ -6,6 +6,13 @@ module.exports = defineConfig({
     host: "0.0.0.0", // 모든 네트워크 인터페이스에서 접근 가능
     port: 3000, // 프론트엔드 포트 명시
     proxy: {
+      "/auth": {
+        target: API_BASE_URL,
+        changeOrigin: true,
+        logLevel: "debug",
+        cookieDomainRewrite: "",
+        secure: false,
+      },
       "/api": {
         target: API_BASE_URL, // 환경 변수 사용
         changeOrigin: true,
