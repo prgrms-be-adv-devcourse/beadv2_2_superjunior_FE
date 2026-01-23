@@ -70,7 +70,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { productApi } from '@/api/axios'
-import { authAPI } from '@/api/auth'
 
 const router = useRouter()
 
@@ -113,15 +112,15 @@ const transformProduct = (product) => {
   return {
     id: product.productId,
     title: product.name,
-    subtitle: product.description?.substring(0, 50) + '...' || '',
+    subtitle: '',
     currentPrice: product.price,
     price: product.price,
     originalPrice: null,
     category: categoryMap[product.category] || product.category,
     image: image,
-    stock: product.stock,
-    description: product.description,
-    originalUrl: product.originalLink,
+    stock: 0,
+    description: '',
+    originalUrl: '',
     // 공동구매 정보는 추후 별도 API로 연동 (임시 값)
     currentCount: 0,
     targetCount: 10,
@@ -134,19 +133,10 @@ const loadingProducts = ref(false)
 const loadProducts = async () => {
   loadingProducts.value = true
   try {
-    const response = await authAPI.getMyProducts()
-    console.log('내 상품 목록1:', response)
-
-    const productsData = response.data || response
-
-    if (Array.isArray(productsData)) {
-      sellerProducts.value = productsData.map(transformProduct)
-    } else if (productsData && Array.isArray(productsData.content)) {
-      // Pageable 객체인 경우
-      sellerProducts.value = productsData.content.map(transformProduct)
-    } else {
-      sellerProducts.value = []
-    }
+    const response = await productApi.getProducts()
+    const data = response.data?.data || response.data
+    const list = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
+    sellerProducts.value = list.map(transformProduct)
   } catch (error) {
     console.error('상품 목록 조회 실패:', error)
     sellerProducts.value = []

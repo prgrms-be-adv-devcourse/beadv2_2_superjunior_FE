@@ -275,7 +275,7 @@ const isFormValid = computed(() => {
 // 선택된 상품 정보
 const selectedProduct = computed(() => {
   if (!form.value.productId) return null
-  return products.value.find(p => p.id === form.value.productId)
+  return products.value.find(p => p.productId === form.value.productId)
 })
 
 const handleCancel = () => {
@@ -393,28 +393,14 @@ const handleSubmit = async () => {
 const fetchProducts = async () => {
   loadingProducts.value = true
   try {
-    const response = await productApi.getMyProducts()
-    console.log('내 상품 목록:', response.data)
+    const response = await productApi.getProducts()
+    const data = response.data?.data || response.data
+    const productList = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
 
-    let productList = []
-
-    // ✅ Pageable 응답 처리
-    if (response.data?.data?.content && Array.isArray(response.data.data.content)) {
-      productList = response.data.data.content
-    }
-    // ✅ 배열로 바로 오는 경우 대비
-    else if (Array.isArray(response.data?.data)) {
-      productList = response.data.data
-    }
-    else if (Array.isArray(response.data)) {
-      productList = response.data
-    }
-
-    // ✅ map 안전
     products.value = productList.map(p => ({
       productId: p.productId,
       name: p.name,
-      stock: p.stock,
+      stock: 0,
       price: p.price,
       category: p.category
     }))
@@ -535,6 +521,11 @@ onMounted(() => {
 /* v-calendar DatePicker 스타일 */
 .date-input {
   width: 100%;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.9;
 }
 
 .form-group input::placeholder,

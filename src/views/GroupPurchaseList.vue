@@ -332,6 +332,9 @@ const loadGroupPurchases = async () => {
         image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
       }
 
+      const discountedPrice = gp.discountedPrice || gp.discountPrice || 0
+      const originalPrice = gp.price || gp.originalPrice || discountedPrice || 0
+
       return {
         id: gp.groupPurchaseId || gp.id,
         title: gp.title,
@@ -340,8 +343,8 @@ const loadGroupPurchases = async () => {
         productName: gp.productName || '상품명',
         seller: gp.sellerName || '판매자',
         sellerId: gp.sellerId,
-        discountPrice: gp.discountedPrice || gp.discountPrice || 0,
-        originalPrice: gp.price || gp.originalPrice || 0,
+        discountPrice: discountedPrice,
+        originalPrice: originalPrice,
         minQuantity: gp.minQuantity,
         maxQuantity: gp.maxQuantity,
         currentCount: gp.currentQuantity || 0,

@@ -528,7 +528,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
 import { authAPI } from '@/api/auth'
-import { sellerBalanceApi } from '@/api/axios'
+import { sellerBalanceApi, productApi } from '@/api/axios'
 import { formatDateTime } from '@/utils/timeFormatter'
 
 const router = useRouter()
@@ -1023,20 +1023,35 @@ const size = ref(4)
 const totalPages = ref(0)
 const totalElements = ref(0)
 
+const normalizeProductList = (response) => {
+  const data = response?.data?.data || response?.data || response
+  if (Array.isArray(data?.content)) return data.content
+  if (Array.isArray(data)) return data
+  return []
+}
+
 //상품 검색
 const searchProducts = async () => {
   loadingProducts.value = true
   try {
-    const result = await authAPI.searchProducts({
-      keyword: searchKeyword.value,
-      category: searchCategory.value,
-      page: page.value,
-      size: size.value
+    const response = await productApi.getProducts()
+    const list = normalizeProductList(response)
+
+    const filtered = list.filter(product => {
+      const matchesKeyword = searchKeyword.value
+        ? product.name?.toLowerCase().includes(searchKeyword.value.toLowerCase())
+        : true
+      const matchesCategory = searchCategory.value
+        ? product.category === searchCategory.value
+        : true
+      return matchesKeyword && matchesCategory
     })
 
-    sellerProducts.value = result.content.map(transformProduct)
-    totalPages.value = result.totalPages
-    totalElements.value = result.totalElements
+    const start = page.value * size.value
+    const end = start + size.value
+    sellerProducts.value = filtered.slice(start, end).map(transformProduct)
+    totalElements.value = filtered.length
+    totalPages.value = Math.ceil(filtered.length / size.value)
   } catch (e) {
     console.error('상품 검색 실패', e)
     sellerProducts.value = []
@@ -1111,9 +1126,9 @@ const transformProduct = (product) => {
     originalPrice: product.price,
     category: categoryMap[product.category] || product.category,
     image: image,
-    stock: product.stock,
-    description: product.description,
-    originalUrl: product.originalLink,
+    stock: 0,
+    description: '',
+    originalUrl: '',
     // 공동구매 정보는 추후 별도 API로 연동 (임시 값)
     currentCount: 0,
     targetCount: 10,

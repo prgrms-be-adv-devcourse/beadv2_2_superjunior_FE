@@ -39,10 +39,10 @@
               <option value="">상품을 선택하세요</option>
               <option
                 v-for="product in products"
-                :key="product.id"
-                :value="product.id"
+                :key="product.productId"
+                :value="product.productId"
               >
-                {{ product.name }} (재고: {{ product.stock }})
+                {{ product.name }}
               </option>
             </select>
             <p v-if="!products.length" class="form-hint">등록된 상품이 없습니다.</p>
@@ -254,7 +254,15 @@ const fetchProducts = async () => {
     const response = await productApi.getProducts()
     console.log('상품 목록:', response.data)
 
-    products.value = response.data.data || response.data || []
+    const data = response.data?.data || response.data
+    const list = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
+    products.value = list.map(product => ({
+      productId: product.productId,
+      name: product.name,
+      price: product.price,
+      category: product.category,
+      stock: 0
+    }))
   } catch (error) {
     console.error('상품 목록 조회 실패:', error)
     products.value = []
