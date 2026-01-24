@@ -218,43 +218,26 @@ const handleSignup = async () => {
       localStorage.setItem('user_role', form.value.userType)
     }
 
-    // 회원가입 후 자동 로그인 처리
-    // 백엔드가 회원가입 응답에 토큰을 포함시키는 경우
-    if (response.data?.accessToken || response.data?.token) {
-      localStorage.setItem('access_token', response.data.accessToken || response.data.token)
-      window.dispatchEvent(new CustomEvent('auth-changed'))
-      alert(response.message || '회원가입이 완료되었습니다!')
-      router.push('/')
-    } else {
-      // 백엔드가 토큰을 포함시키지 않는 경우, 프론트엔드에서 로그인 API 호출
-      try {
-        const loginResponse = await authAPI.login(form.value.email, form.value.password)
+    // 회원가입 후 자동 로그인 처리 (쿠키 기반)
+    try {
+      const loginResponse = await authAPI.login(form.value.email, form.value.password)
 
-        // 로그인 성공 시 토큰 저장
-        if (loginResponse.accessToken || loginResponse.token) {
-          localStorage.setItem('access_token', loginResponse.accessToken || loginResponse.token)
-        } else {
-          // Cookie 기반 인증인 경우 더미 토큰 저장
-          localStorage.setItem('access_token', 'authenticated')
-        }
-
-        // 사용자 정보 업데이트
-        if (loginResponse.email) {
-          localStorage.setItem('user_email', loginResponse.email)
-        }
-        if (loginResponse.role) {
-          localStorage.setItem('user_role', loginResponse.role)
-        }
-
-        window.dispatchEvent(new CustomEvent('auth-changed'))
-        alert(response.message || '회원가입이 완료되었습니다! 자동으로 로그인되었습니다.')
-        router.push('/')
-      } catch (loginError) {
-        // 자동 로그인 실패해도 회원가입은 성공했으므로 로그인 페이지로 이동
-        console.error('Auto login error:', loginError)
-        alert(response.message || '회원가입이 완료되었습니다! 로그인해주세요.')
-        router.push('/login')
+      // 사용자 정보 업데이트
+      if (loginResponse.email) {
+        localStorage.setItem('user_email', loginResponse.email)
       }
+      if (loginResponse.role) {
+        localStorage.setItem('user_role', loginResponse.role)
+      }
+
+      window.dispatchEvent(new CustomEvent('auth-changed'))
+      alert(response.message || '회원가입이 완료되었습니다! 자동으로 로그인되었습니다.')
+      router.push('/')
+    } catch (loginError) {
+      // 자동 로그인 실패해도 회원가입은 성공했으므로 로그인 페이지로 이동
+      console.error('Auto login error:', loginError)
+      alert(response.message || '회원가입이 완료되었습니다! 로그인해주세요.')
+      router.push('/login')
     }
   } catch (error) {
     console.error('Signup error:', error)

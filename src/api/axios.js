@@ -289,6 +289,7 @@ export const orderApi = {
 // 포인트 결제 관련 API
 export const pointApi = {
     deductPoints: (data) => api.post("/point/deduct", data),
+    getPointHistories: (params = {}) => api.get("/points/histories", { params }),
 };
 
 // PG 결제 관련 API

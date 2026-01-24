@@ -1,7 +1,10 @@
 <template>
   <main class="page">
     <div class="container">
-      <h1>포인트 충전</h1>
+      <header class="page-header">
+        <h1>포인트</h1>
+        <p class="subtitle">포인트 충전 및 이력을 확인할 수 있습니다</p>
+      </header>
 
       <div class="grid">
         <!-- 현재 포인트 -->
@@ -43,15 +46,17 @@
 
       <!-- 결제 정보 -->
       <div class="panel">
-        <h3>결제 정보</h3>
+        <div class="panel-header">
+          <h3>충전 정보</h3>
+        </div>
         <div class="payment-info">
           <div class="info-row">
             <span class="info-label">충전 금액</span>
             <span class="info-value">{{ selectedAmount.toLocaleString() }}원</span>
           </div>
           <div class="info-row">
-            <span class="info-label">결제 수단</span>
-            <span class="info-value">토스페이먼츠 (카드)</span>
+            <span class="info-label">충전 방식</span>
+            <span class="info-value">포인트 충전 요청</span>
           </div>
           <div class="info-row">
             <span class="info-label">충전 후 포인트</span>
@@ -70,17 +75,24 @@
 
       <!-- 충전 내역 -->
       <div class="panel">
-        <h3>최근 충전 내역</h3>
-        <div v-if="chargeHistory.length === 0" class="empty-history">
-          <p>충전 내역이 없습니다</p>
+        <div class="panel-header">
+          <h3>충전 / 차감 이력</h3>
+        </div>
+        <div v-if="loadingHistories" class="loading-state">
+          <p>이력을 불러오는 중...</p>
+        </div>
+        <div v-else-if="pointHistories.length === 0" class="empty-history">
+          <p>이력이 없습니다</p>
         </div>
         <div v-else class="history-list">
-          <div v-for="item in chargeHistory" :key="item.id" class="history-item">
+          <div v-for="item in pointHistories" :key="item.id" class="history-item">
             <div class="history-info">
               <span class="history-date">{{ item.date }}</span>
-              <span class="history-amount">{{ item.amount.toLocaleString() }}원</span>
+              <span class="history-amount" :class="item.type">
+                {{ item.type === 'credit' ? '+' : '-' }}{{ item.amount.toLocaleString() }}원
+              </span>
             </div>
-            <span class="history-status" :class="item.status">{{ item.statusText }}</span>
+            <span class="history-status" :class="item.type">{{ item.statusText }}</span>
           </div>
         </div>
       </div>
@@ -90,8 +102,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { v4  as uuidv4 } from 'uuid';
-import api from '@/api/axios'
+import { v4 as uuidv4 } from 'uuid';
+import api, { pointApi } from '@/api/axios'
 import { authAPI } from '@/api/auth'
 // import { useRouter } from 'vue-router'
 
@@ -103,34 +115,8 @@ const customAmount = ref(null)
 
 const presetAmounts = [10000, 30000, 50000, 100000, 200000, 500000]
 
-const chargeHistory = ref([])
-
-let tossPayments = null
-
-// 토스페이먼트 SDK 로드
-const loadTossPayments = async () => {
-  try {
-    // 토스페이먼트 SDK 스크립트 로드
-    if (!window.TossPayments) {
-      const script = document.createElement('script')
-      script.src = 'https://js.tosspayments.com/v1/payment'
-      script.async = true
-      document.head.appendChild(script)
-
-      await new Promise((resolve, reject) => {
-        script.onload = resolve
-        script.onerror = reject
-      })
-    }
-
-    // TODO: 실제 클라이언트 키로 교체 필요
-    const clientKey = 'test_ck_0RnYX2w532qpnn7EPAAN8NeyqApQ'
-    tossPayments = window.TossPayments(clientKey)
-  } catch (error) {
-    console.error('토스페이먼트 SDK 로드 실패:', error)
-    alert('결제 시스템을 불러오는데 실패했습니다. 페이지를 새로고침해주세요.')
-  }
-}
+const pointHistories = ref([])
+const loadingHistories = ref(false)
 
 const selectAmount = (amount) => {
   selectedAmount.value = amount
@@ -149,42 +135,23 @@ const requestCharge = async () => {
     return
   }
 
-  if (!tossPayments) {
-    alert('결제 시스템이 준비되지 않았습니다. 잠시 후 다시 시도해주세요.')
-    return
-  }
-
   try {
-    // 1. 서버에 충전 요청 생성 (orderId와 함께)
-    const orderId = uuidv4();
-    const orderName = `포인트 ${selectedAmount.value.toLocaleString()}원 충전`
-
-    // 백엔드 API 호출하여 주문 정보 저장
-    const response = await api.post('/payments/create', {
-      orderId: orderId,
-      amount: selectedAmount.value
-    })
-
-    console.log('충전 요청 생성 성공:', response.data)
-
-    // 2. 토스페이먼트 결제 요청 (카드 결제만 사용)
-    await tossPayments.requestPayment('카드', {
+    const idempotencyKey = uuidv4()
+    const response = await api.post('/points/charge', {
       amount: selectedAmount.value,
-      orderId: orderId,
-      orderName: orderName,
-      customerName: localStorage.getItem('user_name') || '사용자',
-      successUrl: 'https://0982.store/api/payments/confirm',
-      failUrl: `https://0982.store/api/payments/fail`
+      idempotencyKey
     })
 
+    console.log('포인트 충전 성공:', response.data)
+    alert('포인트 충전이 완료되었습니다.')
+    await fetchUserPoints()
+    await fetchPointHistories()
   } catch (error) {
-    console.error('결제 요청 실패:', error)
-    if (error.code === 'USER_CANCEL') {
-      alert('결제가 취소되었습니다.')
-    } else if (error.response) {
-      alert(`결제 요청 실패: ${error.response.data?.message || '서버 오류가 발생했습니다.'}`)
+    console.error('포인트 충전 실패:', error)
+    if (error.response) {
+      alert(`포인트 충전 실패: ${error.response.data?.message || '서버 오류가 발생했습니다.'}`)
     } else {
-      alert('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.')
+      alert('포인트 충전 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
   }
 }
@@ -193,7 +160,11 @@ const fetchUserPoints = async () => {
   try {
     const response = await authAPI.getPoints()
     const data = response?.data || response
-    if (data?.pointBalance !== undefined) {
+    if (data?.paidPoint !== undefined || data?.bonusPoint !== undefined) {
+      const paidPoint = Number(data?.paidPoint ?? 0)
+      const bonusPoint = Number(data?.bonusPoint ?? 0)
+      userPoints.value = paidPoint + bonusPoint
+    } else if (data?.pointBalance !== undefined) {
       userPoints.value = data.pointBalance || 0
     } else if (data?.point !== undefined) {
       // 하위 호환
@@ -204,9 +175,79 @@ const fetchUserPoints = async () => {
   }
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  } catch (e) {
+    return dateString
+  }
+}
+
+const normalizeHistories = (response) => {
+  const data = response?.data?.data || response?.data || response
+  if (Array.isArray(data?.content)) return data.content
+  if (Array.isArray(data)) return data
+  return []
+}
+
+const mapHistoryItem = (item, index) => {
+  const status = (item.status || '').toString().toUpperCase()
+  const paidPoint = Number(item.paidPoint ?? 0)
+  const bonusPoint = Number(item.bonusPoint ?? 0)
+  const rawAmount = Number(
+    item.amount ??
+    item.changeAmount ??
+    item.pointAmount ??
+    item.point ??
+    (paidPoint + bonusPoint)
+  )
+  const isCredit = status === 'CHARGED' || status === 'BONUS' || rawAmount > 0
+  const amount = Math.abs(rawAmount)
+
+  const statusTextMap = {
+    CHARGED: '충전',
+    BONUS: '보너스',
+    DEDUCTED: '차감',
+    REFUNDED: '환불',
+    CANCELLED: '취소'
+  }
+
+  return {
+    id: item.id || item.historyId || item.pointHistoryId || item.transactionId || `${item.createdAt || 'history'}-${index}`,
+    date: formatDate(item.createdAt || item.date || item.updatedAt),
+    amount,
+    type: isCredit ? 'credit' : 'debit',
+    statusText: statusTextMap[status] || (isCredit ? '충전' : '차감')
+  }
+}
+
+const fetchPointHistories = async () => {
+  loadingHistories.value = true
+  try {
+    const response = await pointApi.getPointHistories({
+      page: 0,
+      size: 20,
+      sort: 'createdAt,desc'
+    })
+    const list = normalizeHistories(response)
+    pointHistories.value = list.map(mapHistoryItem)
+  } catch (error) {
+    console.error('포인트 이력 조회 실패:', error)
+    pointHistories.value = []
+  } finally {
+    loadingHistories.value = false
+  }
+}
+
 onMounted(() => {
-  loadTossPayments()
   fetchUserPoints()
+  fetchPointHistories()
 })
 </script>
 
@@ -219,16 +260,25 @@ onMounted(() => {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
-.container h1 {
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  margin-bottom: 24px;
+  margin: 0 0 8px 0;
   color: #ffffff;
+}
+
+.subtitle {
+  color: #999;
+  font-size: 16px;
 }
 
 .grid {
@@ -252,6 +302,15 @@ onMounted(() => {
   font-weight: 700;
   margin-bottom: 20px;
   color: #ffffff;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a2a2a;
 }
 
 .current-points {
@@ -436,6 +495,14 @@ onMounted(() => {
   color: #ffffff;
 }
 
+.history-amount.credit {
+  color: #51cf66;
+}
+
+.history-amount.debit {
+  color: #ff6b6b;
+}
+
 .history-status {
   padding: 6px 12px;
   border-radius: 20px;
@@ -443,14 +510,22 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.history-status.completed {
-  background: #2a2a2a;
+.history-status.credit {
+  background: rgba(81, 207, 102, 0.2);
   color: #51cf66;
+  border: 1px solid #51cf66;
 }
 
-.history-status.failed {
-  background: #2a2a2a;
+.history-status.debit {
+  background: rgba(255, 107, 107, 0.2);
   color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
 }
 
 @media (max-width: 920px) {
@@ -464,7 +539,7 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .container h1 {
+  .page-header h1 {
     font-size: 24px;
   }
 

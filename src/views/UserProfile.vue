@@ -192,14 +192,78 @@
           <!-- 포인트 -->
           <section v-if="activeMenu === 'point'" class="content-section">
             <h2 class="section-title">포인트</h2>
+
             <div class="panel">
               <div class="point-balance">
                 <h3>포인트 잔액</h3>
                 <div class="balance-amount">{{ formatPrice(userInfo.point) }}P</div>
-                <router-link to="/point/charge" class="btn btn-primary">포인트 충전</router-link>
+                <p class="points-info">공동 구매 참여 시 사용할 수 있습니다</p>
+                <button class="btn btn-primary btn-large" @click="openChargeModal">
+                  포인트 충전
+                </button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>충전 / 차감 이력</h3>
+              </div>
+              <div v-if="loadingHistories" class="loading-state">
+                <p>이력을 불러오는 중...</p>
+              </div>
+              <div v-else-if="pointHistories.length === 0" class="empty-history">
+                <p>이력이 없습니다</p>
+              </div>
+              <div v-else class="history-list">
+                <div v-for="item in pointHistories" :key="item.id" class="history-item">
+                  <div class="history-info">
+                    <span class="history-date">{{ item.date }}</span>
+                    <span class="history-amount" :class="item.type">
+                      {{ item.type === 'credit' ? '+' : '-' }}{{ item.amount.toLocaleString() }}원
+                    </span>
+                  </div>
+                  <span class="history-status" :class="item.type">{{ item.statusText }}</span>
+                </div>
               </div>
             </div>
           </section>
+
+          <!-- 포인트 충전 모달 -->
+          <div
+            v-if="showPointChargeModal"
+            class="modal-overlay"
+            @click.self="closeChargeModal"
+          >
+            <div class="point-charge-modal">
+              <div class="modal-header">
+                <h3>포인트 충전</h3>
+                <button class="close-btn" @click="closeChargeModal">✕</button>
+              </div>
+              <div class="modal-body">
+                <div class="form-group">
+                  <label>충전 금액</label>
+                  <input
+                    v-model.number="chargeAmount"
+                    type="number"
+                    min="10000"
+                    step="10000"
+                    placeholder="최소 10,000원"
+                  />
+                  <p class="input-hint">10,000원 단위로 입력해주세요.</p>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button class="btn btn-outline" @click="closeChargeModal">취소</button>
+                <button
+                  class="btn btn-primary"
+                  :disabled="chargingPoint"
+                  @click="requestPointCharge"
+                >
+                  {{ chargingPoint ? '충전 중...' : '충전하기' }}
+                </button>
+              </div>
+            </div>
+          </div>
 
           <!-- 계정 설정 -->
           <section v-if="activeMenu === 'account-settings'" class="content-section">
@@ -824,9 +888,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { v4 as uuidv4 } from 'uuid'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
-import { groupPurchaseApi, productApi, notificationSettingApi } from '@/api/axios'
+import api, { groupPurchaseApi, productApi, notificationSettingApi, pointApi } from '@/api/axios'
 
 const router = useRouter()
 
@@ -844,6 +909,10 @@ watch(activeMenu, (newMenu) => {
   if (newMenu === 'notification-settings' && notificationSettings.value.length === 0) {
     loadNotificationSettings()
   }
+  if (newMenu === 'point' && pointHistories.value.length === 0) {
+    fetchPointHistories()
+    fetchPointBalance()
+  }
 })
 
 const userInfo = ref({
@@ -854,6 +923,13 @@ const userInfo = ref({
   imageUrl: '',
   point: 0
 })
+
+// 포인트 충전
+const chargeAmount = ref(10000)
+const showPointChargeModal = ref(false)
+const chargingPoint = ref(false)
+const pointHistories = ref([])
+const loadingHistories = ref(false)
 
 // 프로필 수정 모드
 const isEditingProfile = ref(false)
@@ -887,6 +963,58 @@ const formatPrice = (value) => {
   const numberValue = Number(value)
   if (isNaN(numberValue)) return '-'
   return numberValue.toLocaleString()
+}
+
+const fetchPointBalance = async () => {
+  try {
+    const pointResponse = await authAPI.getPoints()
+    const pointData = pointResponse?.data || pointResponse
+    if (pointData?.paidPoint !== undefined || pointData?.bonusPoint !== undefined) {
+      const paidPoint = Number(pointData?.paidPoint ?? 0)
+      const bonusPoint = Number(pointData?.bonusPoint ?? 0)
+      userInfo.value.point = paidPoint + bonusPoint
+    } else if (pointData?.pointBalance !== undefined) {
+      userInfo.value.point = pointData.pointBalance || 0
+    } else if (pointData?.point !== undefined) {
+      userInfo.value.point = pointData.point || 0
+    }
+  } catch (pointError) {
+    console.error('포인트 조회 실패:', pointError)
+  }
+}
+
+const openChargeModal = () => {
+  showPointChargeModal.value = true
+}
+
+const closeChargeModal = () => {
+  showPointChargeModal.value = false
+  chargeAmount.value = 10000
+}
+
+const requestPointCharge = async () => {
+  if (chargeAmount.value < 10000 || chargeAmount.value % 10000 !== 0) {
+    alert('충전 금액은 최소 10,000원이며 10,000원 단위로 입력해주세요.')
+    return
+  }
+
+  chargingPoint.value = true
+  try {
+    const idempotencyKey = uuidv4()
+    await api.post('/points/charge', {
+      amount: chargeAmount.value,
+      idempotencyKey
+    })
+    alert('포인트 충전이 완료되었습니다.')
+    await fetchPointBalance()
+    await fetchPointHistories()
+    closeChargeModal()
+  } catch (error) {
+    console.error('포인트 충전 실패:', error)
+    alert(error.response?.data?.message || '포인트 충전에 실패했습니다.')
+  } finally {
+    chargingPoint.value = false
+  }
 }
 
 const showAddressModal = ref(false)
@@ -1250,6 +1378,56 @@ const formatDate = (dateString) => {
   }
 }
 
+const normalizeHistories = (response) => {
+  const data = response?.data?.data || response?.data || response
+  if (Array.isArray(data?.content)) return data.content
+  if (Array.isArray(data)) return data
+  return []
+}
+
+const mapHistoryItem = (item, index) => {
+  const status = (item.status || '').toString().toUpperCase()
+  const paidPoint = Number(item.paidPoint ?? 0)
+  const bonusPoint = Number(item.bonusPoint ?? 0)
+  const rawAmount = Number(item.amount ?? item.point ?? (paidPoint + bonusPoint))
+  const isCredit = status === 'CHARGED' || status === 'BONUS' || rawAmount > 0
+  const amount = Math.abs(rawAmount)
+
+  const statusTextMap = {
+    CHARGED: '충전',
+    BONUS: '보너스',
+    DEDUCTED: '차감',
+    REFUNDED: '환불',
+    CANCELLED: '취소'
+  }
+
+  return {
+    id: item.id || item.historyId || item.pointHistoryId || item.transactionId || `${item.createdAt || 'history'}-${index}`,
+    date: formatDate(item.createdAt || item.date || item.updatedAt),
+    amount,
+    type: isCredit ? 'credit' : 'debit',
+    statusText: statusTextMap[status] || (isCredit ? '충전' : '차감')
+  }
+}
+
+const fetchPointHistories = async () => {
+  loadingHistories.value = true
+  try {
+    const response = await pointApi.getPointHistories({
+      page: 0,
+      size: 20,
+      sort: 'createdAt,desc'
+    })
+    const list = normalizeHistories(response)
+    pointHistories.value = list.map(mapHistoryItem)
+  } catch (error) {
+    console.error('포인트 이력 조회 실패:', error)
+    pointHistories.value = []
+  } finally {
+    loadingHistories.value = false
+  }
+}
+
 // 주문 상태 텍스트 변환
 const getStatusText = (status) => {
   if (!status) return '알 수 없음'
@@ -1356,18 +1534,7 @@ onMounted(async () => {
       }
 
       // 포인트 잔액 별도 조회
-      try {
-        const pointResponse = await authAPI.getPoints()
-        const pointData = pointResponse?.data || pointResponse
-        if (pointData?.pointBalance !== undefined) {
-          userInfo.value.point = pointData.pointBalance || 0
-        } else if (pointData?.point !== undefined) {
-          // 하위 호환
-          userInfo.value.point = pointData.point || 0
-        }
-      } catch (pointError) {
-        console.error('포인트 조회 실패:', pointError)
-      }
+      await fetchPointBalance()
     }
   } catch (error) {
     console.error('프로필 조회 실패:', error)
@@ -1899,6 +2066,142 @@ const saveNotificationSettings = async () => {
   margin: 0 0 32px 0;
 }
 
+.points-info {
+  font-size: 14px;
+  color: #999;
+  margin: 0 0 24px 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+}
+
+.history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-date {
+  font-size: 13px;
+  color: #999;
+}
+
+.history-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.history-amount.credit {
+  color: #51cf66;
+}
+
+.history-amount.debit {
+  color: #ff6b6b;
+}
+
+.history-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.history-status.credit {
+  background: rgba(81, 207, 102, 0.2);
+  color: #51cf66;
+  border: 1px solid #51cf66;
+}
+
+.history-status.debit {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+/* 포인트 충전 모달 */
+.point-charge-modal {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  overflow: hidden;
+}
+
+.point-charge-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.point-charge-modal .modal-body {
+  padding: 24px;
+}
+
+.point-charge-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.point-charge-modal .form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.point-charge-modal input {
+  width: 100%;
+  background: #0f0f0f;
+  color: #ffffff;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+}
+
+.point-charge-modal input:focus {
+  outline: none;
+  border-color: #ffffff;
+  background: #151515;
+}
+
+.input-hint {
+  font-size: 12px;
+  color: #777;
+  margin: 0;
+}
+
+.point-charge-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #2a2a2a;
+}
+
 /* 주소 관리 섹션 */
 .address-header {
   display: flex;
@@ -2012,6 +2315,11 @@ textarea:focus {
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s;
+}
+
+.btn-large {
+  height: 56px;
+  font-size: 16px;
 }
 
 .btn-primary {
