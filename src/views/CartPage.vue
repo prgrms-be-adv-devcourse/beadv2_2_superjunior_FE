@@ -25,14 +25,19 @@
             <router-link class="btn btn-primary" to="/products">상품 둘러보기</router-link>
           </div>
           <div class="select-all-bar" v-if="items.length > 0">
-            <label class="select-all-checkbox">
-              <input
-                type="checkbox"
-                :checked="selectedItems.size === items.length && items.length > 0"
-                @change="toggleSelectAll"
-              />
-              <span>전체 선택</span>
-            </label>
+            <div class="select-all-actions">
+              <label class="select-all-checkbox">
+                <input
+                  type="checkbox"
+                  :checked="selectedItems.size === items.length && items.length > 0"
+                  @change="toggleSelectAll"
+                />
+                <span>전체 선택</span>
+              </label>
+              <button class="clear-btn" @click="clearCart" :disabled="updatingItems.size > 0">
+                전체 비우기
+              </button>
+            </div>
             <span class="selected-count">{{ selectedItems.size }}개 선택됨</span>
           </div>
           <div
@@ -345,6 +350,23 @@ const removeItem = async (cartId) => {
   }
 }
 
+const clearCart = async () => {
+  if (!confirm('장바구니를 전체 비우시겠습니까?')) {
+    return
+  }
+
+  try {
+    await cartApi.flushCart()
+    items.value = []
+    selectedItems.value.clear()
+    window.dispatchEvent(new CustomEvent('cart-updated'))
+  } catch (error) {
+    console.error('장바구니 비우기 실패:', error)
+    const message = error.response?.data?.message || '장바구니 비우기에 실패했습니다.'
+    alert(message)
+  }
+}
+
 const goToOrder = () => {
   if (selectedItems.value.size === 0) {
     alert('주문할 상품을 선택해주세요.')
@@ -446,6 +468,12 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
+.select-all-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .select-all-checkbox {
   display: flex;
   align-items: center;
@@ -464,6 +492,27 @@ onMounted(() => {
 .selected-count {
   color: #999;
   font-size: 14px;
+}
+
+.clear-btn {
+  border: 1px solid #2a2a2a;
+  background: transparent;
+  color: #ff6b6b;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clear-btn:hover:not(:disabled) {
+  color: #ff5252;
+  border-color: #ff5252;
+}
+
+.clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .cart-item {

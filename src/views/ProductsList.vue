@@ -57,6 +57,14 @@
                   {{ badge }}
                 </span>
               </div>
+
+              <button
+                class="bookmark"
+                :class="{ active: wishlist.has(product.id) }"
+                @click.stop="toggleWishlist(product.id)"
+              >
+                {{ wishlist.has(product.id) ? '★' : '☆' }}
+              </button>
             </div>
 
             <div class="card-body">
