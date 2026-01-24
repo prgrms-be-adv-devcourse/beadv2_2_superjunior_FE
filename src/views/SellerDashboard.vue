@@ -792,15 +792,32 @@ const formatDate = (dateString) => {
 // 주문 상태 텍스트 변환
 const getStatusText = (status) => {
   const statusMap = {
-    'PENDING': '대기중',
-    'IN_PROGRESS': '진행중',
-    'COMPLETED': '완료',
-    'SUCCESS': '성공',
-    'FAILED': '실패',
-    'SHIPPING': '배송중',
-    'DELIVERED': '배송완료',
-    'CANCELLED': '취소됨',
-    'REFUNDED': '환불완료'
+    'PENDING': '결제 대기',
+    'PAYMENT_COMPLETED': '결제 완료',
+    'PAYMENT_FAILED': '결제 실패',
+    'ORDER_FAILED': '주문 실패',
+    'GROUP_PURCHASE_SUCCESS': '공동구매 성공',
+    'GROUP_PURCHASE_FAIL': '공동구매 실패',
+    'CANCEL_REQUESTED': '취소 요청',
+    'CANCELLED': '취소 완료',
+    'REVERSE_REQUESTED': '번복 요청',
+    'REVERSED': '번복 완료',
+    'REFUND_REQUESTED': '반품 요청',
+    'REFUNDED': '반품 완료',
+    'PURCHASE_CONFIRMED': '구매 확정',
+    'pending': '결제 대기',
+    'payment_completed': '결제 완료',
+    'payment_failed': '결제 실패',
+    'order_failed': '주문 실패',
+    'group_purchase_success': '공동구매 성공',
+    'group_purchase_fail': '공동구매 실패',
+    'cancel_requested': '취소 요청',
+    'cancelled': '취소 완료',
+    'reverse_requested': '번복 요청',
+    'reversed': '번복 완료',
+    'refund_requested': '반품 요청',
+    'refunded': '반품 완료',
+    'purchase_confirmed': '구매 확정'
   }
   return statusMap[status] || status || '-'
 }
@@ -2101,6 +2118,12 @@ onMounted(() => {
   background: rgba(81, 207, 102, 0.2);
   color: #51cf66;
   border: 1px solid #51cf66;
+}
+
+.order-status.payment_completed {
+  background: rgba(116, 192, 252, 0.2);
+  color: #74c0fc;
+  border: 1px solid #74c0fc;
 }
 
 .order-status.shipping {

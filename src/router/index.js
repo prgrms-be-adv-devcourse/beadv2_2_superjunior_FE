@@ -29,7 +29,10 @@ import PointCharge from '../views/PointCharge.vue'
 import PointChargeSuccess from '../views/PointChargeSuccess.vue'
 import PointChargeFail from '../views/PointChargeFail.vue'
 import OrderCreate from '../views/OrderCreate.vue'
+import OrderPayment from '../views/OrderPayment.vue'
 import OrderComplete from '../views/OrderComplete.vue'
+import OrderPaymentSuccess from '../views/OrderPaymentSuccess.vue'
+import OrderPaymentFail from '../views/OrderPaymentFail.vue'
 
 const routes = [
   // 공개 페이지 (로그인 불필요)
@@ -71,7 +74,10 @@ const routes = [
 
   // 주문 (인증 필요)
   { path: '/order/create', name: 'order-create', component: OrderCreate, meta: { requiresAuth: true } },
-  { path: '/order/complete', name: 'order-complete', component: OrderComplete, meta: { requiresAuth: true } }
+  { path: '/order/payment', name: 'order-payment', component: OrderPayment, meta: { requiresAuth: true } },
+  { path: '/order/complete', name: 'order-complete', component: OrderComplete, meta: { requiresAuth: true } },
+  { path: '/success', name: 'order-payment-success', component: OrderPaymentSuccess },
+  { path: '/fail', name: 'order-payment-fail', component: OrderPaymentFail }
 ]
 
 const router = createRouter({

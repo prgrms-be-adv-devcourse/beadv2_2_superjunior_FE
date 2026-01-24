@@ -6,7 +6,7 @@
         <p class="subtitle">주문 정보를 입력해주세요</p>
       </header>
 
-      <form @submit.prevent="handleSubmit" class="order-form">
+      <form class="order-form">
         <!-- 배송 정보 -->
         <section class="form-section">
           <h2>배송 정보</h2>
@@ -94,6 +94,7 @@
               placeholder="수신자 이름을 입력하세요"
             />
           </div>
+
         </section>
 
         <!-- 주문 요약 -->
@@ -134,9 +135,10 @@
         <div class="form-actions">
           <button type="button" class="btn btn-outline" @click="handleCancel">취소</button>
           <button
-            type="submit"
+            type="button"
             class="btn btn-primary"
             :disabled="!isFormValid || submitting"
+            @click="handleOrderSubmit"
           >
             {{ submitting ? '주문 처리 중...' : '주문하기' }}
           </button>
@@ -152,6 +154,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { orderApi, cartApi, groupPurchaseApi } from '@/api/axios'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
+import { generateUUID } from '@/utils/uuid'
 
 const router = useRouter()
 const route = useRoute()
@@ -311,7 +314,38 @@ const loadOrderItems = async () => {
   }
 }
 
-const handleSubmit = async () => {
+// 네트워크 오류 재시도 함수
+const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
+  let lastError = null
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await requestFn()
+    } catch (error) {
+      lastError = error
+      
+      // 네트워크 오류나 5xx 에러만 재시도
+      const isRetryable = 
+        !error.response || // 네트워크 오류
+        error.response.status >= 500 || // 서버 오류
+        error.code === 'ECONNABORTED' || // 타임아웃
+        error.code === 'ERR_NETWORK' // 네트워크 오류
+      
+      if (!isRetryable || attempt === maxRetries - 1) {
+        throw error
+      }
+      
+      // 재시도 전 대기 (exponential backoff)
+      const waitTime = delay * Math.pow(2, attempt)
+      console.log(`재시도 ${attempt + 1}/${maxRetries} (${waitTime}ms 후)`)
+      await new Promise(resolve => setTimeout(resolve, waitTime))
+    }
+  }
+  
+  throw lastError
+}
+
+const handleOrderSubmit = async () => {
   if (!isFormValid.value) {
     alert('모든 필수 항목을 입력해주세요.')
     return
@@ -319,6 +353,7 @@ const handleSubmit = async () => {
 
   submitting.value = true
   try {
+    const requestId = generateUUID()
     if (isFromCart.value) {
       // 장바구니에서 주문
       if (orderItems.value.length === 0) {
@@ -336,18 +371,25 @@ const handleSubmit = async () => {
         return
       }
       
-      const response = await orderApi.createOrderFromCart({
-        cartIds: cartIds,
-        address: orderForm.value.addressData.address,
-        addressDetail: orderForm.value.addressData.addressDetail,
-        postalCode: orderForm.value.addressData.postalCode,
-        receiverName: orderForm.value.receiverName
+      const response = await retryRequest(async () => {
+        return await orderApi.createOrderFromCart({
+          cartIds: cartIds,
+          address: orderForm.value.addressData.address,
+          addressDetail: orderForm.value.addressData.addressDetail,
+          postalCode: orderForm.value.addressData.postalCode,
+          receiverName: orderForm.value.receiverName,
+          requestId
+        })
       })
       const orderData = response.data?.data || response.data
       console.log('주문 생성 성공:', orderData)
-      // 장바구니 비우기 이벤트 발생
-      window.dispatchEvent(new CustomEvent('cart-updated'))
-      router.push('/order/complete')
+      
+      // 주문 ID 추출
+      const orderId = orderData?.orderId || orderData?.id
+      if (!orderId) {
+        throw new Error('주문 ID를 받지 못했습니다.')
+      }
+      router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value } })
     } else {
       // 개별 주문
       if (orderItems.value.length === 0) {
@@ -364,28 +406,51 @@ const handleSubmit = async () => {
         return
       }
       
-      const response = await orderApi.createOrder({
-        groupPurchaseId: item.groupPurchaseId,
-        quantity: item.quantity,
-        address: orderForm.value.addressData.address,
-        addressDetail: orderForm.value.addressData.addressDetail,
-        postalCode: orderForm.value.addressData.postalCode,
-        receiverName: orderForm.value.receiverName,
-        sellerId: sellerId
+      // 네트워크 오류 시 재시도
+      const response = await retryRequest(async () => {
+        return await orderApi.createOrder({
+          groupPurchaseId: item.groupPurchaseId,
+          quantity: item.quantity,
+          address: orderForm.value.addressData.address,
+          addressDetail: orderForm.value.addressData.addressDetail,
+          postalCode: orderForm.value.addressData.postalCode,
+          receiverName: orderForm.value.receiverName,
+          sellerId: sellerId,
+          requestId
+        })
       })
       
       const orderData = response.data?.data || response.data
       console.log('주문 생성 성공:', orderData)
-      router.push('/order/complete')
+      
+      // 주문 ID 추출
+      const orderId = orderData?.orderId || orderData?.id
+      if (!orderId) {
+        throw new Error('주문 ID를 받지 못했습니다.')
+      }
+      
+      router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value } })
     }
   } catch (error) {
     console.error('주문 실패:', error)
+    
+    // 중복 주문 에러 처리
+    if (error.response?.status === 409 || 
+        error.response?.data?.code === 'DUPLICATE_ORDER' ||
+        error.response?.data?.message?.includes('중복') ||
+        error.response?.data?.message?.includes('duplicate')) {
+      // 이미 처리된 주문
+      alert('주문이 이미 처리되었습니다.')
+      return
+    }
+    
     const errorMessage = error.response?.data?.message || '주문 처리에 실패했습니다.'
     alert(errorMessage)
   } finally {
     submitting.value = false
   }
 }
+
 
 const handleCancel = () => {
   if (confirm('주문을 취소하시겠습니까?')) {
@@ -689,5 +754,6 @@ onMounted(() => {
   font-size: 14px;
   line-height: 1.5;
 }
+
 </style>
 

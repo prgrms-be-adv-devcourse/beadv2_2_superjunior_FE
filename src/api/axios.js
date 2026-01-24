@@ -289,6 +289,18 @@ export const orderApi = {
     createOrderFromCart: (data) => api.post("/orders/cart", data), // 장바구니에서 주문
 };
 
+// 포인트 결제 관련 API
+export const pointApi = {
+    deductPoints: (data) => api.post("/point/deduct", data),
+};
+
+// PG 결제 관련 API
+export const paymentApi = {
+    createPayment: (data) => api.post("/payments/create", data),
+    confirmPayment: (data) => api.post("/payments/confirm", data),
+    failPayment: (data) => api.post("/payments/fail", data),
+};
+
 // 장바구니 관련 API
 export const cartApi = {
     getCart: (page = 0, size = 100) => api.get("/carts", { params: { page, size } }),
