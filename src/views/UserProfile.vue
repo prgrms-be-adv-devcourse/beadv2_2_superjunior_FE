@@ -425,43 +425,52 @@
           <section v-if="activeMenu === 'cancelled-orders'" class="content-section">
             <h2 class="section-title">주문 취소내역</h2>
             <div class="panel">
-              <div v-if="loadingOrders" class="loading-orders">
+              <div v-if="loadingCancelledOrders" class="loading-orders">
                 <p>주문 취소내역을 불러오는 중...</p>
               </div>
               <div v-else-if="cancelledOrders.length === 0" class="empty-orders">
                 <p>주문 취소내역이 없습니다</p>
               </div>
-              <div v-else class="order-list">
-                <div v-for="order in cancelledOrders" :key="order.orderId" class="order-item">
-                  <div class="order-header">
-                    <div>
-                      <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
-                    </div>
-                    <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
-                  </div>
-                  <div v-if="order.products && order.products.length > 0" class="order-products">
-                    <div v-for="product in order.products" :key="product.id" class="order-product">
-                      <div class="product-details">
-                        <h4>{{ product.title }}</h4>
-                        <p class="product-option">{{ product.option }}</p>
-                        <div class="product-meta">
-                          <span>수량: {{ product.quantity }}개</span>
-                          <span class="product-price">₩{{ formatPrice(product.price) }}</span>
-                        </div>
+              <div v-else>
+                <div class="order-list">
+                  <div v-for="order in cancelledOrders" :key="order.orderId" class="order-item">
+                    <div class="order-header">
+                      <div>
+                        <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                        <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
                       </div>
+                      <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
+                    </div>
+                    <div class="order-summary">
+                      <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                      <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+                      <p v-if="order.reason" class="cancel-reason">취소 사유: {{ order.reason }}</p>
+                    </div>
+                    <div class="order-footer">
+                      <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
                     </div>
                   </div>
-                  <div v-else class="order-summary">
-                    <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                    <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
-                  </div>
-                  <div class="order-footer">
-                    <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
-                    <div class="order-actions">
-                      <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
-                    </div>
-                  </div>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div v-if="cancelledOrdersPageInfo.totalPages > 1" class="pagination">
+                  <button
+                    class="page-btn"
+                    :disabled="cancelledOrdersPageInfo.currentPage === 0"
+                    @click="loadCancelledOrders(cancelledOrdersPageInfo.currentPage - 1)"
+                  >
+                    이전
+                  </button>
+                  <span class="page-info">
+                    {{ cancelledOrdersPageInfo.currentPage + 1 }} / {{ cancelledOrdersPageInfo.totalPages }}
+                  </span>
+                  <button
+                    class="page-btn"
+                    :disabled="cancelledOrdersPageInfo.currentPage >= cancelledOrdersPageInfo.totalPages - 1"
+                    @click="loadCancelledOrders(cancelledOrdersPageInfo.currentPage + 1)"
+                  >
+                    다음
+                  </button>
                 </div>
               </div>
             </div>
@@ -773,6 +782,9 @@ watch(activeMenu, (newMenu) => {
   if (newMenu === 'address' && addressList.value.length === 0) {
     loadAddresses()
   }
+  if (newMenu === 'cancelled-orders' && cancelledOrders.value.length === 0) {
+    loadCancelledOrders()
+  }
 })
 
 const userInfo = ref({
@@ -928,12 +940,42 @@ const activeOrders = computed(() => {
 })
 
 // 취소된 주문 내역
-const cancelledOrders = computed(() => {
-  return orderHistory.value.filter(order => {
-    const status = order.status?.toUpperCase()
-    return status === 'CANCELLED' || status === 'REFUNDED'
-  })
+// 취소 주문 목록
+const cancelledOrders = ref([])
+const cancelledOrdersPageInfo = ref({
+  currentPage: 0,
+  totalPages: 0,
+  totalElements: 0,
+  size: 20
 })
+const loadingCancelledOrders = ref(false)
+
+// 취소 주문 목록 로드
+const loadCancelledOrders = async (page = 0) => {
+  loadingCancelledOrders.value = true
+  try {
+    const response = await authAPI.getCanceledOrders({
+      page,
+      size: 20,
+      sort: 'createdAt,desc'
+    })
+
+    if (response && response.content) {
+      cancelledOrders.value = response.content
+      cancelledOrdersPageInfo.value = {
+        currentPage: response.number || page,
+        totalPages: response.totalPages || 0,
+        totalElements: response.totalElements || 0,
+        size: response.size || 20
+      }
+    }
+  } catch (error) {
+    console.error('취소 주문 목록 로드 실패:', error)
+    alert('취소 주문 목록을 불러오는데 실패했습니다.')
+  } finally {
+    loadingCancelledOrders.value = false
+  }
+}
 
 const goToSellerPage = () => {
   router.push('/seller')
@@ -2299,6 +2341,15 @@ textarea:focus {
   color: #ffffff;
   font-size: 14px;
   text-align: right;
+}
+
+.cancel-reason {
+  margin: 8px 0 0 0;
+  color: #ff9999;
+  font-size: 13px;
+  text-align: right;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 .product-details {

@@ -110,6 +110,17 @@ export const authAPI = {
         })
         return response.data;
     },
+    // 취소된 주문 목록 조회
+    getCanceledOrders: async({
+      page = 0,
+      size = 20,
+      sort = 'createdAt,desc'
+    } = {}) => {
+      const response = await api.get('/orders/cancel', {
+        params: { page, size, sort }
+      })
+      return response.data.data
+    },
     // 주문 확정
     confirmPurchase: async(orderId) => {
         const response = await api.patch(`/orders/${orderId}/purchase-confirmed`)
