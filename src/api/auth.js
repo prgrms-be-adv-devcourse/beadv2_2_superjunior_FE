@@ -95,6 +95,18 @@ export const authAPI = {
         const response = await api.get(`/orders/${orderId}`)
         return response.data;
     },
+    // 주문 취소
+    cancelOrder: async(orderId, cancelReason) => {
+        const response = await api.post(`/orders/cancel/${orderId}`, {
+            cancelReason: cancelReason
+        })
+        return response.data;
+    },
+    // 주문 확정
+    confirmPurchase: async(orderId) => {
+        const response = await api.patch(`/orders/${orderId}/purchase-confirmed`)
+        return response.data;
+    },
     // 판매자 정보 조회
     getSellerInfo: async(sellerId) => {
         const response = await api.get(`/members/seller/${sellerId}`)

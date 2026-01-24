@@ -3,29 +3,90 @@
     <div class="container">
       <div class="page-header">
         <h1>마이페이지</h1>
-        <div class="header-actions">
-          <button 
-            v-if="isSeller" 
-            class="btn btn-primary" 
-            @click="goToSellerPage"
-          >
-            판매자 대시보드
-          </button>
-          <button 
-            v-else 
-            class="btn btn-primary" 
-            @click="goToSellerApplication"
-          >
-            판매자 신청
-          </button>
-        </div>
       </div>
-      
-      <!-- 일반 사용자 정보 -->
-      <div class="user-section">
-        <div class="grid">
-          <div class="panel">
-            <h3>기본 정보</h3>
+
+      <div class="mypage-layout">
+        <!-- 왼쪽 사이드바 메뉴 -->
+        <aside class="sidebar">
+          <div class="user-welcome">
+            <h3>{{ userInfo.name || '사용자' }}님</h3>
+            <p>{{ userInfo.email }}</p>
+          </div>
+
+          <nav class="sidebar-nav">
+            <div class="nav-section">
+              <h4 class="nav-section-title">계정 정보</h4>
+              <button
+                :class="['nav-item', { active: activeMenu === 'profile' }]"
+                @click="activeMenu = 'profile'"
+              >
+                <span class="nav-icon">👤</span>
+                <span>기본 정보</span>
+              </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'address' }]"
+                @click="activeMenu = 'address'"
+              >
+                <span class="nav-icon">📍</span>
+                <span>주소 관리</span>
+              </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'point' }]"
+                @click="activeMenu = 'point'"
+              >
+                <span class="nav-icon">💰</span>
+                <span>포인트</span>
+              </button>
+            </div>
+
+            <div class="nav-section">
+              <h4 class="nav-section-title">쇼핑 정보</h4>
+              <button
+                :class="['nav-item', { active: activeMenu === 'orders' }]"
+                @click="activeMenu = 'orders'"
+              >
+                <span class="nav-icon">📦</span>
+                <span>주문 내역</span>
+              </button>
+            </div>
+
+            <div v-if="isSeller" class="nav-section">
+              <h4 class="nav-section-title">판매자</h4>
+              <button
+                :class="['nav-item', { active: activeMenu === 'seller-orders' }]"
+                @click="activeMenu = 'seller-orders'"
+              >
+                <span class="nav-icon">🛒</span>
+                <span>받은 주문</span>
+              </button>
+              <button
+                class="nav-item"
+                @click="goToSellerPage"
+              >
+                <span class="nav-icon">📊</span>
+                <span>판매자 대시보드</span>
+              </button>
+            </div>
+
+            <div v-if="!isSeller" class="nav-section">
+              <button
+                class="nav-item seller-application"
+                @click="goToSellerApplication"
+              >
+                <span class="nav-icon">🏪</span>
+                <span>판매자 신청</span>
+              </button>
+            </div>
+          </nav>
+        </aside>
+
+        <!-- 오른쪽 컨텐츠 영역 -->
+        <div class="content-area">
+          <!-- 기본 정보 -->
+          <section v-if="activeMenu === 'profile'" class="content-section">
+            <h2 class="section-title">기본 정보</h2>
+            <div class="panel">
+              <h3>내 정보</h3>
             <div class="user-info">
               <div class="info-row">
                 <span class="info-label">이름</span>
@@ -50,164 +111,227 @@
                   <span v-else class="no-image">이미지 없음</span>
                 </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">포인트 잔액</span>
-                <div class="point-info">
-                  <span class="info-value point-value">{{ formatPrice(userInfo.point) }}P</span>
-                  <router-link to="/point/charge" class="btn-point-charge">포인트 충전</router-link>
+            </div>
+          </div>
+          </section>
+
+          <!-- 포인트 -->
+          <section v-if="activeMenu === 'point'" class="content-section">
+            <h2 class="section-title">포인트</h2>
+            <div class="panel">
+              <div class="point-balance">
+                <h3>포인트 잔액</h3>
+                <div class="balance-amount">{{ formatPrice(userInfo.point) }}P</div>
+                <router-link to="/point/charge" class="btn btn-primary">포인트 충전</router-link>
+              </div>
+            </div>
+          </section>
+
+          <!-- 주소 관리 -->
+          <section v-if="activeMenu === 'address'" class="content-section">
+            <h2 class="section-title">주소 관리</h2>
+            <div class="panel">
+              <div class="address-header">
+                <p>등록된 주소: {{ addressList.length }}개</p>
+                <button class="btn btn-primary" @click="addNewAddress">주소 추가</button>
+              </div>
+              <div v-if="loadingAddresses" class="loading-state">
+                <p>주소 목록을 불러오는 중...</p>
+              </div>
+              <div v-else-if="addressList.length === 0" class="empty-state">
+                <p>등록된 주소가 없습니다</p>
+              </div>
+              <div v-else class="address-list">
+                <div
+                  v-for="address in addressList"
+                  :key="address.addressId"
+                  class="address-item"
+                >
+                  <div class="address-content">
+                    <div class="address-main">
+                      <p class="address-text">
+                        <span class="receiver-name">{{ address.receiverName }}</span>
+                        <span class="phone-number">{{ address.phoneNumber }}</span>
+                      </p>
+                      <p class="address-full">
+                        <span v-if="address.postalCode" class="postal-code">
+                          [{{ address.postalCode }}]
+                        </span>
+                        {{ address.address }} {{ address.addressDetail || '' }}
+                      </p>
+                    </div>
+                    <button
+                      class="delete-btn"
+                      @click="deleteAddress(address.addressId)"
+                      :disabled="deletingAddressId === address.addressId"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">주소 정보</span>
-                <button type="button" class="btn-address-manage" @click="openAddressModal">
-                  주소 관리 <!--({{ addressPageInfo.totalElements }}개)-->
+              <div v-if="addressPageInfo.totalPages > 1" class="pagination">
+                <button
+                  class="page-btn"
+                  :disabled="addressPageInfo.currentPage === 0"
+                  @click="loadAddresses(addressPageInfo.currentPage - 1)"
+                >
+                  이전
+                </button>
+                <span class="page-info">
+                  {{ addressPageInfo.currentPage + 1 }} / {{ addressPageInfo.totalPages }}
+                </span>
+                <button
+                  class="page-btn"
+                  :disabled="addressPageInfo.currentPage >= addressPageInfo.totalPages - 1"
+                  @click="loadAddresses(addressPageInfo.currentPage + 1)"
+                >
+                  다음
                 </button>
               </div>
             </div>
-          </div>
-          
-          <!-- <div class="panel">
-            <h3>활동 통계</h3>
-            <div class="user-stats">
-              <div class="stat-box">
-                <span class="stat-label">구매한 상품</span>
-                <span class="stat-number">{{ userStats.purchasedProducts }}</span>
+          </section>
+
+          <!-- 주문 내역 -->
+          <section v-if="activeMenu === 'orders'" class="content-section">
+            <h2 class="section-title">주문 내역</h2>
+            <div class="panel">
+              <div v-if="loadingOrders" class="loading-orders">
+                <p>주문 내역을 불러오는 중...</p>
               </div>
-               <div class="stat-box">
-                <span class="stat-label">작성한 리뷰</span>
-                <span class="stat-number">{{ userStats.reviews }}</span>
-              </div> -
-              <div class="stat-box">
-                <span class="stat-label">참여한 공동구매</span>
-                <span class="stat-number">{{ userStats.groupPurchases }}</span>
+              <div v-else-if="orderHistory.length === 0" class="empty-orders">
+                <p>주문 내역이 없습니다</p>
+                <router-link to="/products" class="btn btn-outline">상품 둘러보기</router-link>
               </div>
-            </div>
-          </div> -->
-        </div>
-        
-        <div class="panel">
-          <h3>주문 내역</h3>
-          <div v-if="loadingOrders" class="loading-orders">
-            <p>주문 내역을 불러오는 중...</p>
-          </div>
-          <div v-else-if="orderHistory.length === 0" class="empty-orders">
-            <p>주문 내역이 없습니다</p>
-            <router-link to="/products" class="btn btn-outline">상품 둘러보기</router-link>
-          </div>
-          <div v-else class="order-list">
-            <div v-for="order in orderHistory" :key="order.orderId" class="order-item">
-              <div class="order-header">
-                <div>
-                  <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                  <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
-                </div>
-                <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
-              </div>
-              <div v-if="order.products && order.products.length > 0" class="order-products">
-                <div v-for="product in order.products" :key="product.id" class="order-product">
-                  <div class="product-details">
-                    <h4>{{ product.title }}</h4>
-                    <p class="product-option">{{ product.option }}</p>
-                    <div class="product-meta">
-                      <span>수량: {{ product.quantity }}개</span>
-                      <span class="product-price">₩{{ formatPrice(product.price) }}</span>
+              <div v-else class="order-list">
+                <div v-for="order in orderHistory" :key="order.orderId" class="order-item">
+                  <div class="order-header">
+                    <div>
+                      <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
+                    </div>
+                    <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
+                  </div>
+                  <div v-if="order.products && order.products.length > 0" class="order-products">
+                    <div v-for="product in order.products" :key="product.id" class="order-product">
+                      <div class="product-details">
+                        <h4>{{ product.title }}</h4>
+                        <p class="product-option">{{ product.option }}</p>
+                        <div class="product-meta">
+                          <span>수량: {{ product.quantity }}개</span>
+                          <span class="product-price">₩{{ formatPrice(product.price) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="order-summary">
+                    <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                    <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+                  </div>
+                  <div class="order-footer">
+                    <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
+                    <div class="order-actions">
+                      <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
+                      <button
+                        v-if="canCancelOrder(order)"
+                        class="btn btn-danger btn-sm"
+                        @click="handleCancelOrder(order.orderId)"
+                      >
+                        주문 취소
+                      </button>
+                      <button
+                        v-if="canConfirmPurchase(order)"
+                        class="btn btn-primary btn-sm"
+                        @click="handleConfirmPurchase(order.orderId)"
+                      >
+                        주문 확정
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-else class="order-summary">
-                <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
-              </div>
-              <div class="order-footer">
-                <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
-                <div class="order-actions">
-                  <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
-                  <button v-if="order.status === 'COMPLETED' || order.status === 'completed'" class="btn btn-outline btn-sm" @click="requestRefund(order.orderId)">환불신청</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- 주문 페이징 -->
-        <div v-if="orderPageInfo.totalPages > 1" class="pagination">
-          <button
-            class="page-btn"
-            :disabled="orderPageInfo.currentPage === 0"
-            @click="loadOrders(orderPageInfo.currentPage - 1)"
-          >
-            이전
-          </button>
+              <!-- 주문 페이징 -->
+              <div v-if="orderPageInfo.totalPages > 1" class="pagination">
+                <button
+                  class="page-btn"
+                  :disabled="orderPageInfo.currentPage === 0"
+                  @click="loadOrders(orderPageInfo.currentPage - 1)"
+                >
+                  이전
+                </button>
 
-          <span class="page-info">
-            {{ orderPageInfo.currentPage + 1 }} / {{ orderPageInfo.totalPages }}
-          </span>
+                <span class="page-info">
+                  {{ orderPageInfo.currentPage + 1 }} / {{ orderPageInfo.totalPages }}
+                </span>
 
-          <button
-            class="page-btn"
-            :disabled="orderPageInfo.currentPage >= orderPageInfo.totalPages - 1"
-            @click="loadOrders(orderPageInfo.currentPage + 1)"
-          >
-            다음
-          </button>
-        </div>
-
-        <!-- 판매자용 주문 목록 섹션 -->
-        <div v-if="isSeller" class="panel">
-          <h3>받은 주문 내역 (판매자)</h3>
-          <div v-if="loadingSellerOrders" class="loading-orders">
-            <p>주문 내역을 불러오는 중...</p>
-          </div>
-          <div v-else-if="sellerOrderHistory.length === 0" class="empty-orders">
-            <p>받은 주문 내역이 없습니다</p>
-          </div>
-          <div v-else class="order-list">
-            <div v-for="order in sellerOrderHistory" :key="order.orderId" class="order-item">
-              <div class="order-header">
-                <div>
-                  <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                  <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
-                </div>
-                <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
-              </div>
-              <div class="order-summary">
-                <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
-              </div>
-              <div class="order-footer">
-                <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
-                <div class="order-actions">
-                  <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
-                </div>
+                <button
+                  class="page-btn"
+                  :disabled="orderPageInfo.currentPage >= orderPageInfo.totalPages - 1"
+                  @click="loadOrders(orderPageInfo.currentPage + 1)"
+                >
+                  다음
+                </button>
               </div>
             </div>
-          </div>
+          </section>
+
+          <!-- 판매자용 주문 목록 섹션 -->
+          <section v-if="activeMenu === 'seller-orders'" class="content-section">
+            <h2 class="section-title">받은 주문 내역 (판매자)</h2>
+            <div class="panel">
+              <div v-if="loadingSellerOrders" class="loading-orders">
+                <p>주문 내역을 불러오는 중...</p>
+              </div>
+              <div v-else-if="sellerOrderHistory.length === 0" class="empty-orders">
+                <p>받은 주문 내역이 없습니다</p>
+              </div>
+              <div v-else class="order-list">
+                <div v-for="order in sellerOrderHistory" :key="order.orderId" class="order-item">
+                  <div class="order-header">
+                    <div>
+                      <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
+                    </div>
+                    <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
+                  </div>
+                  <div class="order-summary">
+                    <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                    <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+                  </div>
+                  <div class="order-footer">
+                    <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
+                    <div class="order-actions">
+                      <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 판매자 주문 페이징 -->
+              <div v-if="sellerOrderPageInfo.totalPages > 1" class="pagination">
+                <button
+                  class="page-btn"
+                  :disabled="sellerOrderPageInfo.currentPage === 0"
+                  @click="loadSellerOrders(sellerOrderPageInfo.currentPage - 1)"
+                >
+                  이전
+                </button>
+
+                <span class="page-info">
+                  {{ sellerOrderPageInfo.currentPage + 1 }} / {{ sellerOrderPageInfo.totalPages }}
+                </span>
+
+                <button
+                  class="page-btn"
+                  :disabled="sellerOrderPageInfo.currentPage >= sellerOrderPageInfo.totalPages - 1"
+                  @click="loadSellerOrders(sellerOrderPageInfo.currentPage + 1)"
+                >
+                  다음
+                </button>
+              </div>
+            </div>
+          </section>
+
         </div>
-
-        <!-- 판매자 주문 페이징 -->
-        <div v-if="isSeller && sellerOrderPageInfo.totalPages > 1" class="pagination">
-          <button
-            class="page-btn"
-            :disabled="sellerOrderPageInfo.currentPage === 0"
-            @click="loadSellerOrders(sellerOrderPageInfo.currentPage - 1)"
-          >
-            이전
-          </button>
-
-          <span class="page-info">
-            {{ sellerOrderPageInfo.currentPage + 1 }} / {{ sellerOrderPageInfo.totalPages }}
-          </span>
-
-          <button
-            class="page-btn"
-            :disabled="sellerOrderPageInfo.currentPage >= sellerOrderPageInfo.totalPages - 1"
-            @click="loadSellerOrders(sellerOrderPageInfo.currentPage + 1)"
-          >
-            다음
-          </button>
-        </div>
-
-
       </div>
     </div>
 
@@ -449,13 +573,23 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
 import { groupPurchaseApi, productApi } from '@/api/axios'
 
 const router = useRouter()
+
+// 활성 메뉴 (기본값: 프로필)
+const activeMenu = ref('profile')
+
+// 메뉴 변경 시 데이터 로드
+watch(activeMenu, (newMenu) => {
+  if (newMenu === 'address' && addressList.value.length === 0) {
+    loadAddresses()
+  }
+})
 
 const userInfo = ref({
   name: '',
@@ -641,12 +775,6 @@ const deleteAddress = async (addressId) => {
   } finally {
     deletingAddressId.value = null
   }
-}
-
-// 주소 모달 열기
-const openAddressModal = () => {
-  showAddressModal.value = true
-  loadAddresses()
 }
 
 // 주소 모달 닫기
@@ -997,6 +1125,72 @@ const closeOrderDetailModal = () => {
   showOrderDetailModal.value = false
 }
 
+// 주문 취소 가능 여부 확인 (주문 확정 전에만 가능)
+const canCancelOrder = (order) => {
+  if (!order || !order.status) return false
+
+  const cancelableStatuses = ['PENDING', 'IN_PROGRESS', 'SUCCESS']
+  return cancelableStatuses.includes(order.status.toUpperCase())
+}
+
+// 주문 확정 가능 여부 확인 (공동구매 성공하고 2일 후부터)
+const canConfirmPurchase = (order) => {
+  if (!order || !order.status) return false
+
+  // 이미 확정된 경우 불가
+  if (order.status.toUpperCase() === 'CONFIRMED' || order.status.toUpperCase() === 'COMPLETED') {
+    return false
+  }
+
+  // 주문이 성공 상태이고, createdAt으로부터 2일이 지난 경우
+  if (order.status.toUpperCase() === 'SUCCESS' && order.createdAt) {
+    const orderDate = new Date(order.createdAt)
+    const twoDaysLater = new Date(orderDate.getTime() + (2 * 24 * 60 * 60 * 1000))
+    const now = new Date()
+    return now >= twoDaysLater
+  }
+
+  return false
+}
+
+// 주문 취소 처리
+const handleCancelOrder = async (orderId) => {
+  const cancelReason = prompt('주문을 취소하시겠습니까? 취소 사유를 입력해주세요:')
+
+  if (!cancelReason) {
+    return
+  }
+
+  try {
+    await authAPI.cancelOrder(orderId, cancelReason)
+    alert('주문이 취소되었습니다.')
+
+    // 주문 목록 새로고침
+    await loadOrders(orderPageInfo.value.currentPage)
+  } catch (error) {
+    console.error('주문 취소 실패:', error)
+    alert(error.response?.data?.message || '주문 취소에 실패했습니다.')
+  }
+}
+
+// 주문 확정 처리
+const handleConfirmPurchase = async (orderId) => {
+  if (!confirm('주문을 확정하시겠습니까? 확정 후에는 취소할 수 없습니다.')) {
+    return
+  }
+
+  try {
+    await authAPI.confirmPurchase(orderId)
+    alert('구매가 확정되었습니다.')
+
+    // 주문 목록 새로고침
+    await loadOrders(orderPageInfo.value.currentPage)
+  } catch (error) {
+    console.error('주문 확정 실패:', error)
+    alert(error.response?.data?.message || '주문 확정에 실패했습니다.')
+  }
+}
+
 </script>
 
 <style scoped>
@@ -1041,16 +1235,13 @@ const closeOrderDetailModal = () => {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .container h1 {
@@ -1060,14 +1251,183 @@ const closeOrderDetailModal = () => {
   color: #ffffff;
 }
 
-.header-actions {
+/* 마이페이지 레이아웃 */
+.mypage-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  min-height: 600px;
+}
+
+/* 사이드바 */
+.sidebar {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 24px;
+  height: fit-content;
+  position: sticky;
+  top: 32px;
+}
+
+.user-welcome {
+  padding-bottom: 20px;
+  border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 20px;
+}
+
+.user-welcome h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.user-welcome p {
+  font-size: 14px;
+  color: #999;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
   display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.nav-item:hover {
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background: #ffffff;
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.nav-item.seller-application {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-item.seller-application:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+/* 컨텐츠 영역 */
+.content-area {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 32px;
+  min-height: 600px;
+}
+
+.content-section {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 24px 0;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #2a2a2a;
+}
+
+/* 포인트 섹션 */
+.point-balance {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.point-balance h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #999;
+  margin: 0 0 16px 0;
+}
+
+.balance-amount {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 32px 0;
+}
+
+/* 주소 관리 섹션 */
+.address-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.address-header p {
+  font-size: 14px;
+  color: #999;
+  margin: 0;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
   margin-bottom: 20px;
 }
@@ -1166,6 +1526,18 @@ textarea:focus {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
   background: #f0f0f0;
+}
+
+.btn-danger {
+  background: #ff4757;
+  color: #ffffff;
+  border: 1px solid #ff4757;
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+  background: #ff3838;
 }
 
 /* 판매자 정산 섹션 */
@@ -1614,6 +1986,17 @@ textarea:focus {
   gap: 16px;
 }
 
+@media (max-width: 1024px) {
+  .mypage-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: relative;
+    top: 0;
+  }
+}
+
 @media (max-width: 920px) {
   .grid {
     grid-template-columns: 1fr;
@@ -1627,21 +2010,35 @@ textarea:focus {
   .user-stats {
     grid-template-columns: 1fr;
   }
+
+  .balance-amount {
+    font-size: 36px;
+  }
 }
 
 @media (max-width: 768px) {
   .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    margin-bottom: 20px;
   }
 
-  .header-actions {
-    width: 100%;
+  .container {
+    padding: 0 16px;
   }
 
-  .header-actions .btn {
-    width: 100%;
+  .mypage-layout {
+    gap: 20px;
+  }
+
+  .content-area {
+    padding: 20px;
+  }
+
+  .sidebar {
+    padding: 20px;
+  }
+
+  .section-title {
+    font-size: 20px;
   }
 }
 
