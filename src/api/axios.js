@@ -281,5 +281,14 @@ export const sellerBalanceApi = {
     },
 };
 
+// 알림 설정 관련 API
+export const notificationSettingApi = {
+    // 알림 설정 전체 조회
+    getSettings: () => api.get("/notification-settings"),
+
+    // 알림 설정 변경 (일괄)
+    updateSettings: (settings) => api.put("/notification-settings", settings),
+};
+
 export default api;
 

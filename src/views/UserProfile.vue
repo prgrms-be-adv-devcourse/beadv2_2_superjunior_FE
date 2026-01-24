@@ -37,6 +37,20 @@
                 <span class="nav-icon">💰</span>
                 <span>포인트</span>
               </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'account-settings' }]"
+                @click="activeMenu = 'account-settings'"
+              >
+                <span class="nav-icon">⚙️</span>
+                <span>계정 설정</span>
+              </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'notification-settings' }]"
+                @click="activeMenu = 'notification-settings'"
+              >
+                <span class="nav-icon">🔔</span>
+                <span>알림 설정</span>
+              </button>
             </div>
 
             <div class="nav-section">
@@ -183,6 +197,134 @@
                 <h3>포인트 잔액</h3>
                 <div class="balance-amount">{{ formatPrice(userInfo.point) }}P</div>
                 <router-link to="/point/charge" class="btn btn-primary">포인트 충전</router-link>
+              </div>
+            </div>
+          </section>
+
+          <!-- 계정 설정 -->
+          <section v-if="activeMenu === 'account-settings'" class="content-section">
+            <h2 class="section-title">계정 설정</h2>
+
+            <!-- 비밀번호 변경 -->
+            <div class="panel account-panel">
+              <div class="panel-header">
+                <h3>비밀번호 변경</h3>
+              </div>
+              <form @submit.prevent="handleChangePassword" class="password-change-form">
+                <div class="password-field-group">
+                  <label class="password-label">현재 비밀번호</label>
+                  <input
+                    v-model="passwordForm.currentPassword"
+                    type="password"
+                    class="password-input"
+                    placeholder="현재 비밀번호를 입력하세요"
+                    required
+                  />
+                </div>
+
+                <div class="password-field-group">
+                  <label class="password-label">새 비밀번호</label>
+                  <input
+                    v-model="passwordForm.newPassword"
+                    type="password"
+                    class="password-input"
+                    placeholder="새 비밀번호를 입력하세요"
+                    required
+                  />
+                  <p class="password-hint">영문, 숫자, 특수문자 포함 8자 이상</p>
+                </div>
+
+                <div class="password-field-group">
+                  <label class="password-label">새 비밀번호 확인</label>
+                  <input
+                    v-model="passwordForm.confirmPassword"
+                    type="password"
+                    class="password-input"
+                    placeholder="새 비밀번호를 다시 입력하세요"
+                    required
+                  />
+                </div>
+
+                <div class="password-form-footer">
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-password-submit"
+                    :disabled="changingPassword"
+                  >
+                    {{ changingPassword ? '변경 중...' : '변경하기' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 회원 탈퇴 -->
+            <div class="panel danger-zone">
+              <div class="panel-header">
+                <h3>회원 탈퇴</h3>
+              </div>
+              <div class="danger-content">
+                <div class="danger-info">
+                  <p class="danger-title">계정을 삭제하시겠습니까?</p>
+                  <p class="danger-description">
+                    회원 탈퇴 시 모든 개인정보 및 주문 내역이 영구적으로 삭제되며,<br />
+                    이 작업은 취소할 수 없습니다.
+                  </p>
+                </div>
+                <button
+                  class="btn btn-danger"
+                  @click="showDeleteAccountModal = true"
+                >
+                  회원 탈퇴
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 알림 설정 -->
+          <section v-if="activeMenu === 'notification-settings'" class="content-section">
+            <h2 class="section-title">알림 설정</h2>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>알림 수신 설정</h3>
+              </div>
+
+              <div v-if="loadingNotificationSettings" class="loading-state">
+                <p>알림 설정을 불러오는 중...</p>
+              </div>
+
+              <div v-else class="notification-settings-list">
+                <div
+                  v-for="setting in notificationSettings"
+                  :key="setting.channel"
+                  class="notification-setting-item"
+                >
+                  <div class="setting-info">
+                    <span class="setting-icon">{{ getNotificationIcon(setting.channel) }}</span>
+                    <div class="setting-details">
+                      <h4 class="setting-title">{{ getNotificationTitle(setting.channel) }}</h4>
+                      <p class="setting-description">{{ getNotificationDescription(setting.channel) }}</p>
+                    </div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input
+                      type="checkbox"
+                      v-model="setting.isEnabled"
+                      @change="handleNotificationToggle(setting)"
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="notification-save-footer">
+                <button
+                  class="btn btn-primary"
+                  @click="saveNotificationSettings"
+                  :disabled="savingNotificationSettings"
+                >
+                  {{ savingNotificationSettings ? '저장 중...' : '설정 저장' }}
+                </button>
               </div>
             </div>
           </section>
@@ -339,43 +481,52 @@
           <section v-if="activeMenu === 'cancelled-orders'" class="content-section">
             <h2 class="section-title">주문 취소내역</h2>
             <div class="panel">
-              <div v-if="loadingOrders" class="loading-orders">
+              <div v-if="loadingCancelledOrders" class="loading-orders">
                 <p>주문 취소내역을 불러오는 중...</p>
               </div>
               <div v-else-if="cancelledOrders.length === 0" class="empty-orders">
                 <p>주문 취소내역이 없습니다</p>
               </div>
-              <div v-else class="order-list">
-                <div v-for="order in cancelledOrders" :key="order.orderId" class="order-item">
-                  <div class="order-header">
-                    <div>
-                      <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
-                    </div>
-                    <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
-                  </div>
-                  <div v-if="order.products && order.products.length > 0" class="order-products">
-                    <div v-for="product in order.products" :key="product.id" class="order-product">
-                      <div class="product-details">
-                        <h4>{{ product.title }}</h4>
-                        <p class="product-option">{{ product.option }}</p>
-                        <div class="product-meta">
-                          <span>수량: {{ product.quantity }}개</span>
-                          <span class="product-price">₩{{ formatPrice(product.price) }}</span>
-                        </div>
+              <div v-else>
+                <div class="order-list">
+                  <div v-for="order in cancelledOrders" :key="order.orderId" class="order-item">
+                    <div class="order-header">
+                      <div>
+                        <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                        <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
                       </div>
+                      <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
+                    </div>
+                    <div class="order-summary">
+                      <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                      <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+                      <p v-if="order.reason" class="cancel-reason">취소 사유: {{ order.reason }}</p>
+                    </div>
+                    <div class="order-footer">
+                      <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
                     </div>
                   </div>
-                  <div v-else class="order-summary">
-                    <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                    <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
-                  </div>
-                  <div class="order-footer">
-                    <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
-                    <div class="order-actions">
-                      <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
-                    </div>
-                  </div>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div v-if="cancelledOrdersPageInfo.totalPages > 1" class="pagination">
+                  <button
+                    class="page-btn"
+                    :disabled="cancelledOrdersPageInfo.currentPage === 0"
+                    @click="loadCancelledOrders(cancelledOrdersPageInfo.currentPage - 1)"
+                  >
+                    이전
+                  </button>
+                  <span class="page-info">
+                    {{ cancelledOrdersPageInfo.currentPage + 1 }} / {{ cancelledOrdersPageInfo.totalPages }}
+                  </span>
+                  <button
+                    class="page-btn"
+                    :disabled="cancelledOrdersPageInfo.currentPage >= cancelledOrdersPageInfo.totalPages - 1"
+                    @click="loadCancelledOrders(cancelledOrdersPageInfo.currentPage + 1)"
+                  >
+                    다음
+                  </button>
                 </div>
               </div>
             </div>
@@ -619,6 +770,54 @@
         </div>
       </div>
     </div>
+
+    <!-- 회원 탈퇴 확인 모달 -->
+    <div
+      v-if="showDeleteAccountModal"
+      class="modal-overlay"
+      @click.self="showDeleteAccountModal = false"
+    >
+      <div class="delete-account-modal">
+        <div class="modal-header">
+          <h2>회원 탈퇴</h2>
+          <button class="close-btn" @click="showDeleteAccountModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="warning-text">
+            정말로 탈퇴하시겠습니까?<br />
+            탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.
+          </p>
+          <form @submit.prevent="handleDeleteAccount" class="delete-form">
+            <div class="form-group">
+              <label>비밀번호 확인 *</label>
+              <input
+                v-model="deleteAccountForm.password"
+                type="password"
+                placeholder="비밀번호를 입력하세요"
+                required
+              />
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-outline"
+                @click="showDeleteAccountModal = false"
+                :disabled="deletingAccount"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                class="btn btn-danger"
+                :disabled="deletingAccount"
+              >
+                {{ deletingAccount ? '탈퇴 중...' : '탈퇴하기' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -627,7 +826,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
-import { groupPurchaseApi, productApi } from '@/api/axios'
+import { groupPurchaseApi, productApi, notificationSettingApi } from '@/api/axios'
 
 const router = useRouter()
 
@@ -638,6 +837,12 @@ const activeMenu = ref('profile')
 watch(activeMenu, (newMenu) => {
   if (newMenu === 'address' && addressList.value.length === 0) {
     loadAddresses()
+  }
+  if (newMenu === 'cancelled-orders' && cancelledOrders.value.length === 0) {
+    loadCancelledOrders()
+  }
+  if (newMenu === 'notification-settings' && notificationSettings.value.length === 0) {
+    loadNotificationSettings()
   }
 })
 
@@ -657,6 +862,26 @@ const profileEditForm = ref({
   phoneNumber: ''
 })
 const savingProfile = ref(false)
+
+// 계정 설정 - 비밀번호 변경
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const changingPassword = ref(false)
+
+// 계정 설정 - 회원 탈퇴
+const showDeleteAccountModal = ref(false)
+const deleteAccountForm = ref({
+  password: ''
+})
+const deletingAccount = ref(false)
+
+// 알림 설정
+const notificationSettings = ref([])
+const loadingNotificationSettings = ref(false)
+const savingNotificationSettings = ref(false)
 
 const formatPrice = (value) => {
   const numberValue = Number(value)
@@ -779,12 +1004,42 @@ const activeOrders = computed(() => {
 })
 
 // 취소된 주문 내역
-const cancelledOrders = computed(() => {
-  return orderHistory.value.filter(order => {
-    const status = order.status?.toUpperCase()
-    return status === 'CANCELLED' || status === 'REFUNDED'
-  })
+// 취소 주문 목록
+const cancelledOrders = ref([])
+const cancelledOrdersPageInfo = ref({
+  currentPage: 0,
+  totalPages: 0,
+  totalElements: 0,
+  size: 20
 })
+const loadingCancelledOrders = ref(false)
+
+// 취소 주문 목록 로드
+const loadCancelledOrders = async (page = 0) => {
+  loadingCancelledOrders.value = true
+  try {
+    const response = await authAPI.getCanceledOrders({
+      page,
+      size: 20,
+      sort: 'createdAt,desc'
+    })
+
+    if (response && response.content) {
+      cancelledOrders.value = response.content
+      cancelledOrdersPageInfo.value = {
+        currentPage: response.number || page,
+        totalPages: response.totalPages || 0,
+        totalElements: response.totalElements || 0,
+        size: response.size || 20
+      }
+    }
+  } catch (error) {
+    console.error('취소 주문 목록 로드 실패:', error)
+    alert('취소 주문 목록을 불러오는데 실패했습니다.')
+  } finally {
+    loadingCancelledOrders.value = false
+  }
+}
 
 const goToSellerPage = () => {
   router.push('/seller')
@@ -1275,6 +1530,144 @@ const saveProfile = async () => {
     alert(error.response?.data?.message || '프로필 수정에 실패했습니다.')
   } finally {
     savingProfile.value = false
+  }
+}
+
+// 비밀번호 변경
+const handleChangePassword = async () => {
+  // 입력 검증
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    alert('모든 필드를 입력해주세요.')
+    return
+  }
+
+  // 새 비밀번호 확인
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    alert('새 비밀번호가 일치하지 않습니다.')
+    return
+  }
+
+  // 비밀번호 유효성 검사 (8자리 이상, 영어+숫자+특수문자)
+  const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-={}[\]:;"'<>?,./]).{8,}$/
+  if (!passwordPattern.test(passwordForm.value.newPassword)) {
+    alert('비밀번호는 8자리 이상이며 영어, 숫자, 특수문자를 각각 하나 이상 포함해야 합니다.')
+    return
+  }
+
+  changingPassword.value = true
+  try {
+    await authAPI.changePassword(
+      passwordForm.value.currentPassword,
+      passwordForm.value.newPassword
+    )
+
+    alert('비밀번호가 변경되었습니다.')
+
+    // 폼 초기화
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+  } catch (error) {
+    console.error('비밀번호 변경 실패:', error)
+    alert(error.response?.data?.message || '비밀번호 변경에 실패했습니다.')
+  } finally {
+    changingPassword.value = false
+  }
+}
+
+// 회원 탈퇴
+const handleDeleteAccount = async () => {
+  if (!deleteAccountForm.value.password) {
+    alert('비밀번호를 입력해주세요.')
+    return
+  }
+
+  deletingAccount.value = true
+  try {
+    await authAPI.deleteAccount(deleteAccountForm.value.password)
+
+    alert('회원 탈퇴가 완료되었습니다.')
+
+    // 로그아웃 처리
+    localStorage.clear()
+    router.push('/')
+  } catch (error) {
+    console.error('회원 탈퇴 실패:', error)
+    alert(error.response?.data?.message || '회원 탈퇴에 실패했습니다.')
+  } finally {
+    deletingAccount.value = false
+    showDeleteAccountModal.value = false
+  }
+}
+
+// 알림 설정 로드
+const loadNotificationSettings = async () => {
+  loadingNotificationSettings.value = true
+  try {
+    const response = await notificationSettingApi.getSettings()
+
+    if (response.data && response.data.data) {
+      notificationSettings.value = response.data.data
+    }
+  } catch (error) {
+    console.error('알림 설정 로드 실패:', error)
+    alert('알림 설정을 불러오는데 실패했습니다.')
+  } finally {
+    loadingNotificationSettings.value = false
+  }
+}
+
+// 알림 채널별 아이콘
+const getNotificationIcon = (channel) => {
+  const icons = {
+    'EMAIL': '📧',
+    'IN_APP': '🔔'
+  }
+  return icons[channel] || '🔔'
+}
+
+// 알림 채널별 제목
+const getNotificationTitle = (channel) => {
+  const titles = {
+    'EMAIL': '이메일 알림',
+    'IN_APP': '앱 내 알림'
+  }
+  return titles[channel] || channel
+}
+
+// 알림 채널별 설명
+const getNotificationDescription = (channel) => {
+  const descriptions = {
+    'EMAIL': '주문 상태 변경, 공동구매 진행 상황 등을 이메일로 받습니다',
+    'IN_APP': '실시간으로 앱 내에서 알림을 받습니다'
+  }
+  return descriptions[channel] || ''
+}
+
+// 알림 토글 변경 (실시간 반영 아님, 저장 버튼 눌러야 함)
+const handleNotificationToggle = (setting) => {
+  // 단순히 상태만 변경, 실제 저장은 saveNotificationSettings에서
+  console.log('알림 설정 변경:', setting.channel, setting.isEnabled)
+}
+
+// 알림 설정 저장
+const saveNotificationSettings = async () => {
+  savingNotificationSettings.value = true
+  try {
+    const settings = notificationSettings.value.map(setting => ({
+      channel: setting.channel,
+      isEnabled: setting.isEnabled
+    }))
+
+    await notificationSettingApi.updateSettings(settings)
+    alert('알림 설정이 저장되었습니다.')
+  } catch (error) {
+    console.error('알림 설정 저장 실패:', error)
+    alert(error.response?.data?.message || '알림 설정 저장에 실패했습니다.')
+  } finally {
+    savingNotificationSettings.value = false
   }
 }
 
@@ -2083,6 +2476,15 @@ textarea:focus {
   text-align: right;
 }
 
+.cancel-reason {
+  margin: 8px 0 0 0;
+  color: #ff9999;
+  font-size: 13px;
+  text-align: right;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
 .product-details {
   flex: 1;
 }
@@ -2630,6 +3032,336 @@ textarea:focus {
   color: #ffffff;
 }
 
+/* 계정 설정 */
+.account-panel {
+  margin-bottom: 24px;
+}
+
+/* 비밀번호 변경 폼 */
+.password-change-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.password-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.password-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #999;
+  letter-spacing: -0.2px;
+}
+
+.password-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.password-input::placeholder {
+  color: #555;
+}
+
+.password-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #4a4a4a;
+}
+
+.password-hint {
+  font-size: 12px;
+  color: #777;
+  margin: 0;
+  line-height: 1.4;
+  padding-left: 2px;
+}
+
+.password-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn-password-submit {
+  min-width: 120px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.danger-zone {
+  background: rgba(255, 67, 54, 0.04) !important;
+  border: 1px solid rgba(255, 67, 54, 0.15) !important;
+  margin-top: 24px;
+}
+
+.danger-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.danger-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.danger-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ff8888;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.danger-description {
+  font-size: 13px;
+  color: #999;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.btn-danger {
+  background: transparent;
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 67, 54, 0.3);
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 67, 54, 0.1);
+  border-color: rgba(255, 67, 54, 0.5);
+  color: #ff5555;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 회원 탈퇴 모달 */
+.delete-account-modal {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 480px;
+  width: 90%;
+  overflow: hidden;
+}
+
+.delete-account-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  border-bottom: 1px solid #2a2a2a;
+  background: rgba(255, 67, 54, 0.05);
+}
+
+.delete-account-modal .modal-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff6b6b;
+  margin: 0;
+}
+
+.delete-account-modal .close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.delete-account-modal .close-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.delete-account-modal .modal-body {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.delete-account-modal .warning-text {
+  font-size: 15px;
+  color: #ff9999;
+  line-height: 1.7;
+  margin: 0;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.delete-account-modal .delete-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.delete-account-modal .form-group {
+  margin-bottom: 0;
+}
+
+.delete-account-modal .form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+/* 알림 설정 */
+.notification-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notification-setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.notification-setting-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #3a3a3a;
+}
+
+.setting-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.setting-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.setting-details {
+  flex: 1;
+}
+
+.setting-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+
+.setting-description {
+  font-size: 13px;
+  color: #999;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 토글 스위치 */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #3a3a3a;
+  transition: 0.3s;
+  border-radius: 28px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #ffffff;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #4CAF50;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.notification-save-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.notification-save-footer .btn {
+  min-width: 120px;
+}
+
 
 @media (max-width: 640px) {
   .address-modal,
@@ -2646,6 +3378,67 @@ textarea:focus {
   }
 
   .btn-search-postal {
+    width: 100%;
+  }
+
+  .delete-account-modal {
+    max-width: 95%;
+  }
+
+  .delete-account-modal .modal-header {
+    padding: 20px;
+  }
+
+  .delete-account-modal .modal-body {
+    padding: 20px;
+  }
+
+  .password-form-footer {
+    justify-content: stretch;
+  }
+
+  .btn-password-submit {
+    flex: 1;
+    width: 100%;
+  }
+
+  .password-input {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .password-label {
+    font-size: 12px;
+  }
+
+  .danger-description br {
+    display: none;
+  }
+
+  .danger-description {
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    width: 100%;
+    padding: 13px 24px;
+  }
+
+  .notification-setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .setting-info {
+    width: 100%;
+  }
+
+  .notification-save-footer {
+    justify-content: stretch;
+  }
+
+  .notification-save-footer .btn {
     width: 100%;
   }
 }

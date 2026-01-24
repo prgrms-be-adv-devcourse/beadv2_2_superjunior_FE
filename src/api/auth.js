@@ -110,6 +110,17 @@ export const authAPI = {
         })
         return response.data;
     },
+    // 취소된 주문 목록 조회
+    getCanceledOrders: async({
+      page = 0,
+      size = 20,
+      sort = 'createdAt,desc'
+    } = {}) => {
+      const response = await api.get('/orders/cancel', {
+        params: { page, size, sort }
+      })
+      return response.data.data
+    },
     // 주문 확정
     confirmPurchase: async(orderId) => {
         const response = await api.patch(`/orders/${orderId}/purchase-confirmed`)
@@ -207,5 +218,22 @@ export const authAPI = {
         })
 
         return response.data.data
+    },
+
+    // 비밀번호 변경
+    changePassword: async(password, newPassword) => {
+        const response = await api.put(`/members/password`, {
+            password,
+            newPassword
+        })
+        return response.data;
+    },
+
+    // 회원 탈퇴
+    deleteAccount: async(password) => {
+        const response = await api.delete(`/members`, {
+            data: { password }
+        })
+        return response.data;
     }
 }
