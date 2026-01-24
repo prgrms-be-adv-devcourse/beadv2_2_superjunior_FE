@@ -68,11 +68,14 @@
         </button>
       </div>
 
-      <!-- 충전 내역 -->
+      <!-- 포인트 이력 -->
       <div class="panel">
-        <h3>최근 충전 내역</h3>
-        <div v-if="chargeHistory.length === 0" class="empty-history">
-          <p>충전 내역이 없습니다</p>
+        <h3>포인트 이력</h3>
+        <div v-if="historyLoading" class="empty-history">
+          <p>포인트 이력을 불러오는 중...</p>
+        </div>
+        <div v-else-if="chargeHistory.length === 0" class="empty-history">
+          <p>포인트 이력이 없습니다</p>
         </div>
         <div v-else class="history-list">
           <div v-for="item in chargeHistory" :key="item.id" class="history-item">
@@ -104,6 +107,7 @@ const customAmount = ref(null)
 const presetAmounts = [10000, 30000, 50000, 100000, 200000, 500000]
 
 const chargeHistory = ref([])
+const historyLoading = ref(false)
 
 let tossPayments = null
 
@@ -204,9 +208,57 @@ const fetchUserPoints = async () => {
   }
 }
 
+const formatHistoryDate = (dateString) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getHistoryStatusText = (status) => {
+  const map = {
+    CHARGED: '충전',
+    BONUS_EARNED: '보너스',
+    TRANSFERRED: '출금',
+    RETURNED: '반환',
+    USED: '사용'
+  }
+  return map[status] || status || '-'
+}
+
+const fetchChargeHistory = async () => {
+  historyLoading.value = true
+  try {
+    const response = await authAPI.getPointHistories({
+      page: 0,
+      size: 10
+    })
+    const pageData = response?.data || response
+    const list = Array.isArray(pageData?.content) ? pageData.content : []
+    chargeHistory.value = list.map(item => ({
+      id: item.id || item.orderId,
+      date: formatHistoryDate(item.createdAt),
+      amount: (item.paidPoint || 0) + (item.bonusPoint || 0),
+      status: (item.status || '').toLowerCase(),
+      statusText: getHistoryStatusText(item.status)
+    }))
+  } catch (error) {
+    console.error('포인트 이력 조회 실패:', error)
+    chargeHistory.value = []
+  } finally {
+    historyLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadTossPayments()
   fetchUserPoints()
+  fetchChargeHistory()
 })
 </script>
 
@@ -451,6 +503,19 @@ onMounted(() => {
 .history-status.failed {
   background: #2a2a2a;
   color: #ff6b6b;
+}
+
+.history-status.charged,
+.history-status.bonus_earned,
+.history-status.returned {
+  background: #2a2a2a;
+  color: #74c0fc;
+}
+
+.history-status.transferred,
+.history-status.used {
+  background: #2a2a2a;
+  color: #ffd43b;
 }
 
 @media (max-width: 920px) {
