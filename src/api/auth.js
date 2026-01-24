@@ -158,6 +158,27 @@ export const authAPI = {
         const response = await api.get(`/points`)
         return response.data;
     },
+    // 포인트 이력 조회
+    getPointHistories: async ({
+        page = 0,
+        size = 10
+      } = {}) => {
+        const response = await api.get('/points/histories', {
+          params: {
+            page,
+            size
+          }
+        })
+        return response.data
+      },
+    // 포인트 출금
+    transferPoints: async ({ amount, idempotencyKey }) => {
+        const response = await api.post('/points/transfer', {
+            amount,
+            idempotencyKey
+        })
+        return response.data
+      },
     getChargeHistory(paymentId) {
         return api.get(`/payments/${paymentId}`)
       },

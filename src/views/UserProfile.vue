@@ -196,7 +196,11 @@
               <div class="point-balance">
                 <h3>포인트 잔액</h3>
                 <div class="balance-amount">{{ formatPrice(userInfo.point) }}P</div>
-                <router-link to="/point/charge" class="btn btn-primary">포인트 충전</router-link>
+                <div class="point-actions">
+                  <router-link to="/point/charge" class="btn btn-primary btn-point-action">포인트 충전</router-link>
+                  <button class="btn btn-outline btn-point-action" @click="openPointTransferModal">포인트 출금</button>
+                </div>
+                <p v-if="pointTransferSuccess" class="point-success">{{ pointTransferSuccess }}</p>
               </div>
             </div>
           </section>
@@ -536,6 +540,40 @@
       </div>
     </div>
 
+    <!-- 포인트 출금 모달 -->
+    <div
+      v-if="showPointTransferModal"
+      class="modal-overlay"
+      @click.self="closePointTransferModal"
+    >
+      <div class="point-transfer-modal">
+        <div class="modal-header">
+          <h2>포인트 출금</h2>
+          <button class="close-btn" @click="closePointTransferModal">✕</button>
+        </div>
+        <div class="point-transfer-body">
+          <label class="point-transfer-label">출금 금액</label>
+          <input
+            v-model="pointTransferAmount"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="출금할 포인트를 입력해주세요"
+          />
+          <p v-if="pointTransferError" class="point-transfer-error">{{ pointTransferError }}</p>
+          <p class="point-transfer-hint">보유 포인트: {{ formatPrice(userInfo.point) }}P</p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="closePointTransferModal" :disabled="transferringPoints">
+            취소
+          </button>
+          <button class="btn btn-primary" @click="submitPointTransfer" :disabled="transferringPoints">
+            {{ transferringPoints ? '출금 중...' : '출금하기' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 주소 목록 모달 -->
     <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAddressModal">
       <div class="address-modal">
@@ -823,6 +861,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
 import { useRouter } from 'vue-router'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
@@ -1250,6 +1289,71 @@ const formatDate = (dateString) => {
   }
 }
 
+const fetchPointBalance = async () => {
+  try {
+    const pointResponse = await authAPI.getPoints()
+    const pointData = pointResponse?.data || pointResponse
+    if (pointData?.pointBalance !== undefined) {
+      userInfo.value.point = pointData.pointBalance || 0
+    } else if (pointData?.point !== undefined) {
+      userInfo.value.point = pointData.point || 0
+    }
+  } catch (pointError) {
+    console.error('포인트 조회 실패:', pointError)
+  }
+}
+
+const showPointTransferModal = ref(false)
+const pointTransferAmount = ref('')
+const pointTransferError = ref('')
+const transferringPoints = ref(false)
+const pointTransferSuccess = ref('')
+
+const openPointTransferModal = () => {
+  pointTransferAmount.value = ''
+  pointTransferError.value = ''
+  showPointTransferModal.value = true
+}
+
+const closePointTransferModal = () => {
+  if (transferringPoints.value) return
+  showPointTransferModal.value = false
+}
+
+const submitPointTransfer = async () => {
+  const amount = Number(pointTransferAmount.value)
+  pointTransferError.value = ''
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    pointTransferError.value = '출금 금액을 올바르게 입력해주세요.'
+    return
+  }
+
+  if (amount > userInfo.value.point) {
+    pointTransferError.value = '보유 포인트보다 큰 금액입니다.'
+    return
+  }
+
+  transferringPoints.value = true
+  try {
+    await authAPI.transferPoints({
+      amount,
+      idempotencyKey: uuidv4()
+    })
+    await fetchPointBalance()
+    pointTransferSuccess.value = '포인트 출금이 완료되었습니다.'
+    showPointTransferModal.value = false
+    setTimeout(() => {
+      pointTransferSuccess.value = ''
+    }, 3000)
+  } catch (error) {
+    console.error('포인트 출금 실패:', error)
+    pointTransferError.value = error.response?.data?.message || '포인트 출금에 실패했습니다.'
+  } finally {
+    transferringPoints.value = false
+  }
+}
+
 // 주문 상태 텍스트 변환
 const getStatusText = (status) => {
   if (!status) return '알 수 없음'
@@ -1356,18 +1460,7 @@ onMounted(async () => {
       }
 
       // 포인트 잔액 별도 조회
-      try {
-        const pointResponse = await authAPI.getPoints()
-        const pointData = pointResponse?.data || pointResponse
-        if (pointData?.pointBalance !== undefined) {
-          userInfo.value.point = pointData.pointBalance || 0
-        } else if (pointData?.point !== undefined) {
-          // 하위 호환
-          userInfo.value.point = pointData.point || 0
-        }
-      } catch (pointError) {
-        console.error('포인트 조회 실패:', pointError)
-      }
+      await fetchPointBalance()
     }
   } catch (error) {
     console.error('프로필 조회 실패:', error)
@@ -1899,6 +1992,77 @@ const saveNotificationSettings = async () => {
   margin: 0 0 32px 0;
 }
 
+.point-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-point-action {
+  min-width: 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.point-actions .btn-outline {
+  background: transparent;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+}
+
+.point-actions .btn-outline:hover {
+  background: #2a2a2a;
+  border-color: #ffffff;
+}
+
+.point-success {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #51cf66;
+}
+
+.point-transfer-modal {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 24px;
+  padding: 32px;
+  width: min(420px, 92vw);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.point-transfer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.point-transfer-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.point-transfer-error {
+  color: #ff6b6b;
+  font-size: 13px;
+  margin: 0;
+}
+
+.point-transfer-hint {
+  color: #999;
+  font-size: 13px;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
 /* 주소 관리 섹션 */
 .address-header {
   display: flex;
@@ -2015,14 +2179,15 @@ textarea:focus {
 }
 
 .btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-  background: #f0f0f0;
+  box-shadow: none;
+  background: #2a2a2a;
 }
 
 .btn-danger {
