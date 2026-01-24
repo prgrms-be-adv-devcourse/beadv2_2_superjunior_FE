@@ -196,8 +196,8 @@ onMounted(() => {
   if (!isLoggedIn.value) {
     verifySession()
   }
-  loadCartCount()
-  loadNotificationCount()
+  // loadCartCount()
+  // loadNotificationCount()
   
   // 로그인 상태 변경 감지 (다른 탭에서의 변경)
   window.addEventListener('storage', handleStorageChange)
@@ -222,22 +222,22 @@ onMounted(() => {
   
 
   // 읽지 않은 알림 개수 주기적 갱신 (10초마다)
-  notificationCheckInterval = setInterval(() => {
-    if (isLoggedIn.value) {
-      loadNotificationCount()
-    }
-  }, 10000)
+  // notificationCheckInterval = setInterval(() => {
+  //   if (isLoggedIn.value) {
+  //     loadNotificationCount()
+  //   }
+  // }, 10000)
   
   // 페이지 포커스/가시성 변경 시 알림 개수 갱신
   document.addEventListener('visibilitychange', handleVisibilityChange)
   window.addEventListener('focus', handleFocus)
 
   // 장바구니 개수 주기적 업데이트 (5초마다)
-  cartCountInterval = setInterval(() => {
-    if (isLoggedIn.value) {
-      loadCartCount()
-    }
-  }, 5000)
+  // cartCountInterval = setInterval(() => {
+  //   if (isLoggedIn.value) {
+  //     loadCartCount()
+  //   }
+  // }, 5000)
 })
 
 onBeforeUnmount(() => {

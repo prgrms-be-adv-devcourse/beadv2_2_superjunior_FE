@@ -145,7 +145,7 @@ const handleLogin = async () => {
     } catch (profileError) {
       console.warn('프로필 조회 실패:', profileError)
     }
-
+    
     // 로그인 상태 변경 이벤트 발생 (SiteHeader가 즉시 반영하도록)
     window.dispatchEvent(new CustomEvent('auth-changed'))
     

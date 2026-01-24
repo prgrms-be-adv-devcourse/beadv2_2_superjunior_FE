@@ -1255,24 +1255,32 @@ const getStatusText = (status) => {
   if (!status) return '알 수 없음'
 
   const statusMap = {
-    'IN_PROGRESS': '진행 중',
-    'SUCCESS': '주문 성공',
-    'FAILED': '주문 실패',
-    'PENDING': '주문 대기',
-    'CONFIRMED': '주문 확인',
-    'SHIPPING': '배송 중',
-    'COMPLETED': '배송 완료',
-    'CANCELLED': '주문 취소',
-    'REFUNDED': '환불 완료',
-    'in_progress': '진행 중',
-    'success': '주문 성공',
-    'failed': '주문 실패',
-    'pending': '주문 대기',
-    'confirmed': '주문 확인',
-    'shipping': '배송 중',
-    'completed': '배송 완료',
-    'cancelled': '주문 취소',
-    'refunded': '환불 완료'
+    'PENDING': '결제 대기',
+    'PAYMENT_COMPLETED': '결제 완료',
+    'PAYMENT_FAILED': '결제 실패',
+    'ORDER_FAILED': '주문 실패',
+    'GROUP_PURCHASE_SUCCESS': '공동구매 성공',
+    'GROUP_PURCHASE_FAIL': '공동구매 실패',
+    'CANCEL_REQUESTED': '취소 요청',
+    'CANCELLED': '취소 완료',
+    'REVERSE_REQUESTED': '번복 요청',
+    'REVERSED': '번복 완료',
+    'REFUND_REQUESTED': '반품 요청',
+    'REFUNDED': '반품 완료',
+    'PURCHASE_CONFIRMED': '구매 확정',
+    'pending': '결제 대기',
+    'payment_completed': '결제 완료',
+    'payment_failed': '결제 실패',
+    'order_failed': '주문 실패',
+    'group_purchase_success': '공동구매 성공',
+    'group_purchase_fail': '공동구매 실패',
+    'cancel_requested': '취소 요청',
+    'cancelled': '취소 완료',
+    'reverse_requested': '번복 요청',
+    'reversed': '번복 완료',
+    'refund_requested': '반품 요청',
+    'refunded': '반품 완료',
+    'purchase_confirmed': '구매 확정'
   }
 
   return statusMap[status] || status
@@ -2408,6 +2416,11 @@ textarea:focus {
 .order-status.completed {
   background: #2a2a2a;
   color: #51cf66;
+}
+
+.order-status.payment_completed {
+  background: #2a2a2a;
+  color: #74c0fc;
 }
 
 .order-status.shipping {
