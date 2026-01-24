@@ -285,12 +285,27 @@ const handleSubmit = async () => {
   }
 }
 
-onMounted(() => {
-  // 로그인 체크
-  const token = localStorage.getItem('access_token')
-  if (!token) {
-    alert('로그인이 필요합니다.')
-    router.push('/login')
+onMounted(async () => {
+  // 로그인 체크 (쿠키 기반)
+  let memberId = localStorage.getItem('member_id')
+  if (!memberId) {
+    try {
+      const profile = await authAPI.getProfile()
+      const rawData = profile?.data || profile
+      const profileData = rawData?.data || rawData
+      if (!profileData?.memberId) {
+        throw new Error('로그인 정보가 없습니다.')
+      }
+      memberId = profileData.memberId
+      localStorage.setItem('member_id', memberId)
+      localStorage.setItem('user_data', JSON.stringify(profileData))
+      if (profileData.email) localStorage.setItem('user_email', profileData.email)
+      if (profileData.role) localStorage.setItem('user_role', profileData.role)
+      if (profileData.name) localStorage.setItem('user_name', profileData.name)
+    } catch (error) {
+      alert('로그인이 필요합니다.')
+      router.push('/login')
+    }
   }
 })
 </script>

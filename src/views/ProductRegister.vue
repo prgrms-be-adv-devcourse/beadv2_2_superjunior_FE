@@ -207,8 +207,8 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   // 로그인 체크
-  const token = localStorage.getItem('access_token')
-  if (!token) {
+  const memberId = localStorage.getItem('member_id')
+  if (!memberId) {
     alert('로그인이 필요합니다.fetchMyProducts')
     router.push('/login')
     return
