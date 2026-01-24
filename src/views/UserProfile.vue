@@ -2536,8 +2536,8 @@ const saveNotificationSettings = async () => {
 }
 
 .seller-sales-section .seller-sales-hero {
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #151515;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   padding: 28px;
   display: flex;
@@ -2573,7 +2573,7 @@ const saveNotificationSettings = async () => {
 }
 
 .sales-stat-card {
-  background: #0f0f0f;
+  background: #151515;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 18px;
@@ -2680,7 +2680,7 @@ const saveNotificationSettings = async () => {
 }
 
 .seller-mini-hero {
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+  background: #161616;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 18px;
@@ -2688,10 +2688,6 @@ const saveNotificationSettings = async () => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-}
-
-.seller-mini-hero.gp {
-  background: radial-gradient(circle at top, rgba(153, 202, 255, 0.12), rgba(255, 255, 255, 0.02));
 }
 
 .hero-info {
