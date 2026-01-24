@@ -86,33 +86,93 @@
           <section v-if="activeMenu === 'profile'" class="content-section">
             <h2 class="section-title">기본 정보</h2>
             <div class="panel">
-              <h3>내 정보</h3>
-            <div class="user-info">
-              <div class="info-row">
-                <span class="info-label">이름</span>
-                <span class="info-value">{{ userInfo.name || '-' }}</span>
+              <div class="panel-header">
+                <h3>내 정보</h3>
+                <button
+                  v-if="!isEditingProfile"
+                  class="btn btn-outline btn-sm"
+                  @click="startEditProfile"
+                >
+                  프로필 수정
+                </button>
               </div>
-              <div class="info-row">
-                <span class="info-label">이메일</span>
-                <span class="info-value">{{ userInfo.email || '-' }}</span>
+
+              <!-- 읽기 모드 -->
+              <div v-if="!isEditingProfile" class="user-info">
+                <div class="info-row">
+                  <span class="info-label">이름</span>
+                  <span class="info-value">{{ userInfo.name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">이메일</span>
+                  <span class="info-value">{{ userInfo.email || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">전화번호</span>
+                  <span class="info-value">{{ userInfo.phoneNumber || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">가입일</span>
+                  <span class="info-value">{{ userInfo.joinDate || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">프로필 이미지</span>
+                  <div class="image-preview">
+                    <img v-if="userInfo.imageUrl" :src="userInfo.imageUrl" alt="프로필" class="profile-image" />
+                    <span v-else class="no-image">이미지 없음</span>
+                  </div>
+                </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">전화번호</span>
-                <span class="info-value">{{ userInfo.phoneNumber || '-' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">가입일</span>
-                <span class="info-value">{{ userInfo.joinDate || '-' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">프로필 이미지</span>
-                <div class="image-preview">
-                  <img v-if="userInfo.imageUrl" :src="userInfo.imageUrl" alt="프로필" class="profile-image" />
-                  <span v-else class="no-image">이미지 없음</span>
+
+              <!-- 수정 모드 -->
+              <div v-else class="profile-edit-form">
+                <div class="form-group">
+                  <label>이름 *</label>
+                  <input
+                    v-model="profileEditForm.name"
+                    type="text"
+                    placeholder="이름을 입력하세요 (2-50자)"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>전화번호 *</label>
+                  <input
+                    v-model="profileEditForm.phoneNumber"
+                    type="tel"
+                    placeholder="010-1234-5678"
+                    required
+                  />
+                </div>
+                <div class="info-row">
+                  <span class="info-label">이메일</span>
+                  <span class="info-value readonly">{{ userInfo.email || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">가입일</span>
+                  <span class="info-value readonly">{{ userInfo.joinDate || '-' }}</span>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    @click="cancelEditProfile"
+                    :disabled="savingProfile"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    @click="saveProfile"
+                    :disabled="savingProfile"
+                  >
+                    {{ savingProfile ? '저장 중...' : '저장' }}
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
           </section>
 
           <!-- 포인트 -->
@@ -599,6 +659,14 @@ const userInfo = ref({
   imageUrl: '',
   point: 0
 })
+
+// 프로필 수정 모드
+const isEditingProfile = ref(false)
+const profileEditForm = ref({
+  name: '',
+  phoneNumber: ''
+})
+const savingProfile = ref(false)
 
 const formatPrice = (value) => {
   const numberValue = Number(value)
@@ -1191,6 +1259,63 @@ const handleConfirmPurchase = async (orderId) => {
   }
 }
 
+// 프로필 수정 모드 진입
+const startEditProfile = () => {
+  profileEditForm.value.name = userInfo.value.name || ''
+  profileEditForm.value.phoneNumber = userInfo.value.phoneNumber || ''
+  isEditingProfile.value = true
+}
+
+// 프로필 수정 취소
+const cancelEditProfile = () => {
+  isEditingProfile.value = false
+  profileEditForm.value.name = ''
+  profileEditForm.value.phoneNumber = ''
+}
+
+// 프로필 저장
+const saveProfile = async () => {
+  // 입력 검증
+  if (!profileEditForm.value.name || profileEditForm.value.name.length < 2 || profileEditForm.value.name.length > 50) {
+    alert('이름은 2~50자 사이여야 합니다.')
+    return
+  }
+
+  const namePattern = /^[가-힣a-zA-Z0-9\s]+$/
+  if (!namePattern.test(profileEditForm.value.name)) {
+    alert('이름은 한글, 영문, 숫자만 입력 가능합니다.')
+    return
+  }
+
+  const phonePattern = /^[0-9-]{9,15}$/
+  if (profileEditForm.value.phoneNumber && !phonePattern.test(profileEditForm.value.phoneNumber)) {
+    alert('전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)')
+    return
+  }
+
+  savingProfile.value = true
+  try {
+    await authAPI.updateProfile(
+      profileEditForm.value.name,
+      profileEditForm.value.phoneNumber
+    )
+
+    alert('프로필 정보가 변경되었습니다.')
+
+    // 사용자 정보 업데이트
+    userInfo.value.name = profileEditForm.value.name
+    userInfo.value.phoneNumber = profileEditForm.value.phoneNumber
+
+    // 수정 모드 종료
+    isEditingProfile.value = false
+  } catch (error) {
+    console.error('프로필 수정 실패:', error)
+    alert(error.response?.data?.message || '프로필 수정에 실패했습니다.')
+  } finally {
+    savingProfile.value = false
+  }
+}
+
 </script>
 
 <style scoped>
@@ -1443,8 +1568,17 @@ const handleConfirmPurchase = async (orderId) => {
 .panel h3 {
   font-size: 20px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin: 0;
   color: #ffffff;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2a2a2a;
 }
 
 .row {
@@ -1683,6 +1817,10 @@ textarea:focus {
   font-size: 14px;
 }
 
+.info-value.readonly {
+  color: #999;
+}
+
 .point-info {
   display: flex;
   align-items: center;
@@ -1773,6 +1911,56 @@ textarea:focus {
 .btn-address-manage:hover {
   background: #2a2a2a;
   border-color: #666;
+}
+
+/* 프로필 수정 폼 */
+.profile-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-edit-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-edit-form .form-group label {
+  font-weight: 600;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.profile-edit-form .form-group input {
+  padding: 12px 16px;
+  background: #0f0f0f;
+  border: 2px solid #2a2a2a;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #ffffff;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.profile-edit-form .form-group input:focus {
+  outline: none;
+  border-color: #ffffff;
+  background: #151515;
+}
+
+.profile-edit-form .info-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.profile-edit-form .form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #2a2a2a;
 }
 
 .info-input {

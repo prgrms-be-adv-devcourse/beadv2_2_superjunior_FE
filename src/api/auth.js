@@ -43,6 +43,14 @@ export const authAPI = {
         const response = await api.get(`/members/profile`)
         return response.data;
     },
+    // 프로필 수정
+    updateProfile: async(name, phoneNumber) => {
+        const response = await api.put(`/members/profile`, {
+            name,
+            phoneNumber
+        })
+        return response.data;
+    },
     // 주소 목록 조회
     getAddresses: async(page = 0, size = 10) => {
         const response = await api.get(`/members/addresses`, {
