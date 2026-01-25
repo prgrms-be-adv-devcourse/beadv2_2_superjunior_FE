@@ -177,7 +177,7 @@ const verifyEmailToken = async () => {
 
   verifyingToken.value = true
   try {
-    const response = await authAPI.verifyEmail(form.value.verificationToken)
+    const response = await authAPI.verifyEmail(form.value.email, form.value.verificationToken)
     emailVerified.value = true
     alert(response.message || '이메일 인증이 완료되었습니다.')
   } catch (error) {
