@@ -16,7 +16,7 @@
         </div>
         <div v-else class="products-grid">
           <div
-            v-for="product in sellerProducts"
+            v-for="product in pagedSellerProducts"
             :key="product.id"
             class="product-card"
             @click="goToProduct(product.id)"
@@ -36,6 +36,26 @@
             </div>
           </div>
         </div>
+
+        <div v-if="totalPages > 1" class="pagination">
+          <button
+            class="page-btn"
+            :disabled="page === 0"
+            @click="goToPage(page - 1)"
+          >
+            이전
+          </button>
+          <span class="page-info">
+            {{ page + 1 }} / {{ totalPages }}
+          </span>
+          <button
+            class="page-btn"
+            :disabled="page + 1 >= totalPages"
+            @click="goToPage(page + 1)"
+          >
+            다음
+          </button>
+        </div>
       </section>
 
       <section class="seller-notices-section">
@@ -53,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 
@@ -67,6 +87,18 @@ const props = defineProps({
 const router = useRouter()
 const seller = ref({ name: '' })
 const sellerProducts = ref([])
+const page = ref(0)
+const size = ref(9)
+
+const pagedSellerProducts = computed(() => {
+  const start = page.value * size.value
+  return sellerProducts.value.slice(start, start + size.value)
+})
+
+const totalPages = computed(() => {
+  if (sellerProducts.value.length === 0) return 0
+  return Math.ceil(sellerProducts.value.length / size.value)
+})
 
 // 더미 공지사항 데이터
 const notices = ref([
@@ -104,7 +136,7 @@ const categoryImages = {
 const loadProducts = async () => {
   try {
     // 공동구매 검색 API를 사용해서 특정 판매자의 공동구매 조회
-    const response = await api.get(`/searches/purchase/search/seller`, {
+    const response = await api.get(`/searches/purchase/search`, {
       params: {
         sellerId: props.id,
         keyword: '',
@@ -116,7 +148,7 @@ const loadProducts = async () => {
     const productsData = response.data.data ?? response.data
     const productsList = Array.isArray(productsData) ? productsData : productsData.content ?? []
 
-    // 첫 번째 공동구매에서 판매자 이름 가져오기
+    // 첫 번째 공동구매에서 판매자 정보 가져오기
     if (productsList.length > 0) {
       seller.value = {
         name: productsList[0].sellerName || productsList[0].seller?.name || '판매자'
@@ -124,22 +156,25 @@ const loadProducts = async () => {
     }
 
     sellerProducts.value = productsList.map(purchase => {
-      const categoryKorean = categoryMap[purchase.category] || purchase.category || '기타'
-      let purchaseImage = purchase.imageUrl || purchase.image
-      if (!purchaseImage || purchaseImage.trim() === '') {
-        purchaseImage = categoryImages[purchase.category] || categoryImages['PET']
-      }
+      const productInfo = purchase.productSearchInfo || {}
+      const rawCategory = productInfo.category || purchase.category
+      const categoryKorean = categoryMap[rawCategory] || rawCategory || '기타'
+      const purchaseImage = categoryImages[rawCategory] || categoryImages[categoryKorean] || categoryImages['PET']
 
       return {
-        id: purchase.purchaseId || purchase.id || purchase._id || purchase.groupPurchaseId,
+        id: purchase.groupPurchaseId || purchase.purchaseId || purchase.id || purchase._id,
         title: purchase.title || purchase.name,
         category: categoryKorean,
-        price: purchase.targetPrice || purchase.price,
-        currentPrice: purchase.targetPrice || purchase.price,
+        price: purchase.discountedPrice || productInfo.price || purchase.price,
+        currentPrice: purchase.discountedPrice || productInfo.price || purchase.price,
         image: purchaseImage,
         status: purchase.status
       }
     })
+
+    if (page.value >= totalPages.value) {
+      page.value = Math.max(0, totalPages.value - 1)
+    }
   } catch (error) {
     console.error('판매자 공동구매 목록 조회 실패:', error)
     sellerProducts.value = []
@@ -149,6 +184,11 @@ const loadProducts = async () => {
 const goToProduct = (id) => {
   if (!id) return
   router.push({ name: 'group-purchase-detail', params: { id } })
+}
+
+const goToPage = (newPage) => {
+  if (newPage < 0 || newPage >= totalPages.value) return
+  page.value = newPage
 }
 
 onMounted(() => {
@@ -335,6 +375,43 @@ watch(
   color: #999;
   font-size: 13px;
   flex-shrink: 0;
+}
+
+.pagination {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #ffffff;
+  color: #0a0a0a;
+  border-color: #ffffff;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  min-width: 80px;
+  text-align: center;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {

@@ -93,7 +93,7 @@ const loadTossPayments = async () => {
       })
     }
 
-    const clientKey = 'test_ck_0RnYX2w532qpnn7EPAAN8NeyqApQ'
+    const clientKey = 'test_ck_ex6BJGQOVDke4JO2pWwR3W4w2zNb'
     tossPayments = window.TossPayments(clientKey)
   } catch (error) {
     console.error('토스페이먼트 SDK 로드 실패:', error)

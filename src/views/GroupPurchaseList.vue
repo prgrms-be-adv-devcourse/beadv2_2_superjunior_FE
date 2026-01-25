@@ -7,15 +7,12 @@
           <p>{{ route.query.sellerId ? '해당 판매자의 공동구매를 확인하세요' : '등록한 모든 공동구매를 확인하고 관리할 수 있습니다.' }}</p>
         </div>
         <!-- <button v-if="isSeller" class="btn btn-primary" @click="goToCreate"> -->
-        <button class="btn btn-primary" @click="goToCreate"> 
+        <button class="btn btn-primary" @click="goToCreate">
           + 공동구매 생성
         </button>
       </div>
 
-      <div
-        v-if="!loading"
-        class="filters-bar"
-      >
+      <div class="filters-bar">
         <div class="filter-group">
           <label for="gp-category-select">카테고리</label>
           <select
@@ -54,7 +51,7 @@
             v-model="sortFilter"
             @change="handleSortChange"
           >
-            <option value="createdAt,desc">최근 등록순</option>
+            <option value="updatedAt,desc">최근 등록순</option>
             <option value="currentQuantity,desc">인기순</option>
             <option value="endDate,asc">마감 임박순</option>
           </select>
@@ -81,18 +78,16 @@
         </button>
       </div>
 
-      <div v-if="loading" class="loading-state">
-        <p>공동구매 목록을 불러오는 중...</p>
-      </div>
-
-      <div v-else>
-        <div v-if="filteredGroupPurchases.length === 0" class="empty-state">
-          <p>조건에 맞는 공동구매가 없습니다.</p>
-          <button v-if="isSeller" class="btn btn-primary" @click="goToCreate">공동구매 생성하기</button>
-        </div>
-
+      <div>
         <section class="product-grid-section">
-          <div class="product-grid">
+          <div v-if="loading" class="loading-state">
+            <p>공동구매 목록을 불러오는 중...</p>
+          </div>
+          <div v-else-if="filteredGroupPurchases.length === 0" class="empty-state">
+            <p>조건에 맞는 공동구매가 없습니다.</p>
+            <button v-if="isSeller" class="btn btn-primary" @click="goToCreate">공동구매 생성하기</button>
+          </div>
+          <div v-else class="product-grid">
             <article
               v-for="gp in pagedGroupPurchases"
               :key="gp.id"
@@ -196,6 +191,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { groupPurchaseApi, cartApi } from '@/api/axios'
+import { authAPI } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -204,10 +200,12 @@ const groupPurchases = ref([])
 const searchKeyword = ref('')
 const statusFilter = ref('all')
 const categoryFilter = ref('all')
-const sortFilter = ref('createdAt,desc')
+const sortFilter = ref('updatedAt,desc')
 const loading = ref(false)
 const page = ref(0)
-const size = ref(8)
+const size = ref(9)
+const serverTotalPages = ref(0)
+const useServerPaging = computed(() => !route.query.sellerId)
 
 // 카테고리별 기본 이미지
 const categoryImages = {
@@ -235,6 +233,25 @@ const categoryMap = {
   'PET': '반려동물'
 }
 
+
+const normalizeCategory = (rawCategory) => {
+  if (!rawCategory) {
+    return { key: '', label: '기타' }
+  }
+
+  const upper = String(rawCategory).toUpperCase()
+  if (categoryMap[upper]) {
+    return { key: upper, label: categoryMap[upper] }
+  }
+
+  const matched = Object.entries(categoryMap).find(([, label]) => label === rawCategory)
+  if (matched) {
+    return { key: matched[0], label: matched[1] }
+  }
+
+  return { key: upper, label: rawCategory || '기타' }
+}
+
 const isSeller = computed(() => {
   return localStorage.getItem('user_role') === 'seller'
 })
@@ -245,7 +262,7 @@ const currentSellerId = computed(() => {
 
 const sortFieldMap = {
   currentQuantity: 'currentCount',
-  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
   endDate: 'endDate'
 }
 
@@ -259,6 +276,10 @@ const getComparableValue = (item, field) => {
 }
 
 const filteredGroupPurchases = computed(() => {
+  if (useServerPaging.value) {
+    return groupPurchases.value
+  }
+
   let result = [...groupPurchases.value]
 
   if (categoryFilter.value !== 'all') {
@@ -279,8 +300,8 @@ const filteredGroupPurchases = computed(() => {
     )
   }
 
-  const [sortFieldKey, direction = 'desc'] = (sortFilter.value || 'createdAt,desc').split(',')
-  const targetField = sortFieldMap[sortFieldKey] || sortFieldKey || 'createdAt'
+  const [sortFieldKey, direction = 'desc'] = (sortFilter.value || 'updatedAt,desc').split(',')
+  const targetField = sortFieldMap[sortFieldKey] || sortFieldKey || 'updatedAt'
   const dir = direction === 'asc' ? 1 : -1
 
   result.sort((a, b) => {
@@ -294,11 +315,15 @@ const filteredGroupPurchases = computed(() => {
 })
 
 const pagedGroupPurchases = computed(() => {
+  if (useServerPaging.value) {
+    return filteredGroupPurchases.value
+  }
   const start = page.value * size.value
   return filteredGroupPurchases.value.slice(start, start + size.value)
 })
 
 const totalPages = computed(() => {
+  if (useServerPaging.value) return serverTotalPages.value
   if (filteredGroupPurchases.value.length === 0) return 0
   return Math.ceil(filteredGroupPurchases.value.length / size.value)
 })
@@ -318,41 +343,52 @@ const loadGroupPurchases = async () => {
     let response
     if (sellerId) {
       // 판매자별 공동구매 목록 조회
-      response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100, sortFilter.value)
+      response = await groupPurchaseApi.searchGroupPurchases(sellerId, 0, 20, sortFilter.value)
       console.log('판매자별 공동구매 목록:', response.data)
     } else {
       // 내 공동구매 목록 조회 (판매자 전용)
-      response = await groupPurchaseApi.getMyGroupPurchases(sortFilter.value)
-      console.log('내 공동구매 목록:', response.data)
+      response = await authAPI.searchPurchase({
+        keyword: searchKeyword.value,
+        category: categoryFilter.value === 'all' ? '' : categoryFilter.value,
+        status: statusFilter.value === 'all' ? '' : statusFilter.value,
+        page: page.value,
+        size: size.value,
+        sort: sortFilter.value
+      })
+      console.log('내 공동구매 목록:', response)
     }
 
     // 응답 구조에 따라 조정
-    const data = response.data.data || response.data
+    const data = sellerId ? (response.data.data || response.data) : response
     const content = data.content || data
+
+    if (!sellerId) {
+      serverTotalPages.value = data.totalPages || 0
+    }
 
     // 백엔드 응답을 프론트엔드 형식으로 매핑
     groupPurchases.value = Array.isArray(content) ? content.map(gp => {
-      // 카테고리 변환 (백엔드 enum -> 한글)
-      const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+      const productInfo = gp.productSearchInfo || {}
+      const rawCategory = productInfo.category || gp.category
+      const normalizedCategory = normalizeCategory(rawCategory)
+      const categoryKorean = normalizedCategory.label
 
-      // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
-      let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+      let image = gp.imageUrl || gp.image || gp.thumbnailUrl
       if (!image || image.trim() === '') {
-        // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
-        image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+        image = categoryImages[normalizedCategory.key] || categoryImages[categoryKorean] || categoryImages['PET']
       }
 
       const discountedPrice = gp.discountedPrice || gp.discountPrice || 0
-      const originalPrice = gp.price || gp.originalPrice || discountedPrice || 0
+      const originalPrice = productInfo.price || gp.price || gp.originalPrice || discountedPrice || 0
 
       return {
         id: gp.groupPurchaseId || gp.id,
         title: gp.title,
         category: categoryKorean,
+        rawCategory: normalizedCategory.key,
         description: gp.description,
-        productName: gp.productName || '상품명',
-        seller: gp.sellerName || '판매자',
-        sellerId: gp.sellerId,
+        productName: gp.productName || '???',
+        sellerId: productInfo.sellerId || gp.sellerId,
         discountPrice: discountedPrice,
         originalPrice: originalPrice,
         minQuantity: gp.minQuantity,
@@ -361,7 +397,7 @@ const loadGroupPurchases = async () => {
         status: gp.status || 'OPEN',
         startDate: gp.startDate,
         endDate: gp.endDate,
-        createdAt: gp.createdAt,
+        updatedAt: gp.updatedAt,
         image: image
       }
     }) : []
@@ -458,19 +494,26 @@ const handleDelete = async (id) => {
 
 const handleSearch = () => {
   page.value = 0
+  loadGroupPurchases()
 }
 
 const resetFilters = () => {
   searchKeyword.value = ''
   categoryFilter.value = 'all'
   statusFilter.value = 'all'
-  sortFilter.value = 'createdAt,desc'
+  sortFilter.value = 'updatedAt,desc'
   page.value = 0
   loadGroupPurchases()
 }
 
 const handleSortChange = () => {
   page.value = 0
+  loadGroupPurchases()
+}
+
+const goToPage = (nextPage) => {
+  if (nextPage < 0) return
+  page.value = nextPage
   loadGroupPurchases()
 }
 
@@ -512,6 +555,9 @@ watch(() => route.query.sellerId, () => {
 
 watch([searchKeyword, categoryFilter, statusFilter], () => {
   page.value = 0
+  if (useServerPaging.value) {
+    loadGroupPurchases()
+  }
 })
 
 watch(filteredGroupPurchases, () => {
