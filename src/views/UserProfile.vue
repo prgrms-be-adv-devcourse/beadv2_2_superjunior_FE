@@ -571,7 +571,7 @@
                       <button
                         v-if="order.status?.toUpperCase() === 'PENDING'"
                         class="btn btn-primary btn-sm"
-                        @click="goToPayment(order.orderId)"
+                        @click="goToPayment(order)"
                       >
                         결제하기
                       </button>
@@ -1935,8 +1935,18 @@ const selectGroupPurchase = ref(null)
 const selectProduct = ref(null)
 
 // 결제 페이지로 이동
-const goToPayment = (orderId) => {
-  router.push({ name: 'order-payment', query: { orderId } })
+const goToPayment = (order) => {
+  const orderId = order?.orderId || order?.id
+  const amount = Number(order?.totalAmount ?? 0)
+  const groupPurchaseName = order?.groupPurchaseName || '공동구매'
+  router.push({
+    name: 'order-payment',
+    query: {
+      orderId,
+      amount: Number.isFinite(amount) ? amount : 0,
+      groupPurchaseName
+    }
+  })
 }
 
 const viewOrderDetail = async (orderId) => {
