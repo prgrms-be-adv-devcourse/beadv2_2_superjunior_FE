@@ -627,6 +627,111 @@ details p {
   color: #ffffff;
 }
 
+body.theme-light .product-detail-page,
+body.theme-light .summary,
+body.theme-light .content {
+  background: #ffffff;
+  color: #111111;
+}
+
+body.theme-light .info,
+body.theme-light .panel,
+body.theme-light .notice-list li,
+body.theme-light details {
+  background: #ffffff;
+  color: #111111;
+  border-color: #e2e2e7;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .info-top {
+  border-bottom-color: #e2e2e7;
+}
+
+body.theme-light .product-title,
+body.theme-light .panel h2,
+body.theme-light .notice-list .title,
+body.theme-light details summary,
+body.theme-light .detailed-description h3 {
+  color: #111111;
+}
+
+body.theme-light .stock-inline,
+body.theme-light .subtitle,
+body.theme-light .shipping,
+body.theme-light .short-description,
+body.theme-light .detailed-description,
+body.theme-light .detailed-description p,
+body.theme-light .notice-list .date,
+body.theme-light details p {
+  color: #333333;
+}
+
+body.theme-light .price-stock {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: #111111;
+}
+
+body.theme-light .specs li {
+  background: #f7f7f9;
+  border-left-color: #111111;
+  color: #111111;
+}
+
+body.theme-light .specs li:hover {
+  background: #f0f0f3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .btn-outline {
+  color: #111111;
+  border-color: #d0d0d6;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f2f2f5;
+  border-color: #c8c8ce;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .btn-primary {
+  background: #111111;
+  color: #ffffff;
+}
+
+body.theme-light .btn-primary:hover {
+  background: #2a2a2a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+body.theme-light .thumbnail.active {
+  border-color: #111111;
+}
+
+body.theme-light .category {
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #d0d0d6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .short-description {
+  border-bottom-color: #e2e2e7;
+}
+
+body.theme-light .notice-list .tag {
+  background: #f2f2f5;
+  color: #111111;
+  border: 1px solid #d0d0d6;
+}
+
+body.theme-light .main-image,
+body.theme-light .thumbnail,
+body.theme-light .thumbnail-list {
+  background: #ffffff;
+}
+
 .not-found p {
   color: #ffffff;
   margin-bottom: 20px;

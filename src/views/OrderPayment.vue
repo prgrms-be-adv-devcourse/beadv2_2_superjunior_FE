@@ -78,6 +78,14 @@ const amount = computed(() => {
   const value = Number(route.query.amount || 0)
   return Number.isFinite(value) ? value : 0
 })
+const groupPurchaseName = computed(() => {
+  const fromQuery = route.query.groupPurchaseName
+  if (fromQuery) {
+    sessionStorage.setItem('pending_group_purchase_name', String(fromQuery))
+    return String(fromQuery)
+  }
+  return sessionStorage.getItem('pending_group_purchase_name') || `주문 결제 ${amount.value.toLocaleString()}원`
+})
 
 const loadTossPayments = async () => {
   try {
@@ -122,24 +130,25 @@ const handlePay = async () => {
         idempotencyKey: pointIdempotencyKey.value,
         orderId: orderId.value,
         amount: amount.value,
+        groupPurchaseName: groupPurchaseName.value,
         autoCharge: false
       })
       await startOrderStatusPolling(orderId.value)
     } else {
       await paymentApi.createPayment({
         orderId: orderId.value,
-        amount: amount.value
+        amount: amount.value,
+        groupPurchaseName: groupPurchaseName.value
       })
       if (!tossPayments) {
         alert('결제 시스템이 준비되지 않았습니다. 잠시 후 다시 시도해주세요.')
         return
       }
       sessionStorage.setItem(pendingOrderKey, orderId.value)
-      const orderName = `주문 결제 ${amount.value.toLocaleString()}원`
       await tossPayments.requestPayment('카드', {
         amount: amount.value,
         orderId: orderId.value,
-        orderName: orderName,
+        orderName: groupPurchaseName.value,
         customerName: localStorage.getItem('user_name') || '사용자',
         successUrl: `${window.location.origin}/success`,
         failUrl: `${window.location.origin}/fail`
@@ -186,19 +195,19 @@ const startOrderStatusPolling = async (orderIdValue) => {
     attempts += 1
     try {
       const response = await authAPI.getOrderDetail(orderIdValue)
-      const data = response?.data || response
+      const data = response?.data?.data || response?.data || response
       const status = data?.status
 
       if (status === 'PAYMENT_COMPLETED') {
         clearOrderStatusPolling()
-    sessionStorage.removeItem(pendingOrderKey)
+        sessionStorage.removeItem(pendingOrderKey)
         router.push('/order/complete')
         return
       }
 
       if (failureStatuses.has(status)) {
         clearOrderStatusPolling()
-    sessionStorage.removeItem(pendingOrderKey)
+        sessionStorage.removeItem(pendingOrderKey)
         alert('주문이 실패 또는 종료되었습니다. 주문 내역을 확인해주세요.')
         return
       }

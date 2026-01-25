@@ -11,6 +11,9 @@
         <!-- <router-link class="nav-link" to="/community">커뮤니티</router-link> -->
       </nav>
       <div class="actions">
+        <button class="icon-btn theme-btn" @click="toggleTheme" :aria-label="theme === 'dark' ? '라이트 모드' : '다크 모드'">
+          <span class="icon">{{ theme === 'dark' ? '🌙' : '☀️' }}</span>
+        </button>
         <button class="icon-btn cart-btn" @click="goToCart">
           <span class="icon">🛒</span>
           <span v-if="cartCount > 0" class="badge">{{ cartCount }}</span>
@@ -41,6 +44,7 @@ const router = useRouter()
 const isLoggedIn = ref(false)
 const cartCount = ref(0)
 const notificationCount = ref(0)
+const theme = ref('dark')
 let authCheckInterval = null
 let notificationCheckInterval = null
 let cartCountInterval = null
@@ -122,6 +126,17 @@ const loadCartCount = async () => {
   }
 }
 
+const applyTheme = (value) => {
+  theme.value = value
+  document.body.classList.toggle('theme-light', value === 'light')
+  document.body.classList.toggle('theme-dark', value === 'dark')
+  localStorage.setItem('theme', value)
+}
+
+const toggleTheme = () => {
+  applyTheme(theme.value === 'dark' ? 'light' : 'dark')
+}
+
 const handleCartUpdated = () => {
   loadCartCount()
 }
@@ -192,6 +207,8 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
+  const savedTheme = localStorage.getItem('theme')
+  applyTheme(savedTheme === 'light' ? 'light' : 'dark')
   checkAuthStatus()
   if (!isLoggedIn.value) {
     verifySession()
@@ -264,8 +281,8 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #1a1a1a;
-  border-bottom: 1px solid #2a2a2a;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -285,7 +302,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   transition: opacity 0.2s;
 }
 
@@ -305,7 +322,7 @@ onBeforeUnmount(() => {
 }
 
 .brand-text {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .nav {
@@ -315,7 +332,7 @@ onBeforeUnmount(() => {
 }
 
 .nav-link {
-  color: #999;
+  color: var(--muted);
   text-decoration: none;
   font-weight: 500;
   font-size: 15px;
@@ -324,11 +341,11 @@ onBeforeUnmount(() => {
 }
 
 .nav-link:hover {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .nav-link.router-link-active {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .nav-link.router-link-active::after {
@@ -338,7 +355,7 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   height: 2px;
-  background: #ffffff;
+  background: var(--text);
 }
 
 .actions {
@@ -358,10 +375,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text);
 }
 
 .icon-btn:hover {
-  background: #2a2a2a;
+  background: var(--hover);
 }
 
 .icon {
@@ -400,25 +418,25 @@ onBeforeUnmount(() => {
 
 .btn-outline {
   background: transparent;
-  color: #ffffff;
-  border-color: #3a3a3a;
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 
 .btn-outline:hover {
-  background: #2a2a2a;
-  border-color: #4a4a4a;
+  background: var(--hover);
+  border-color: var(--border);
 }
 
 .btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   border: none;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-  background: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  background: var(--btn-primary-hover);
 }
 
 .user-menu {

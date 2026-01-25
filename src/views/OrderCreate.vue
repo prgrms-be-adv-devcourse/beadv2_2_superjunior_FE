@@ -384,12 +384,17 @@ const handleOrderSubmit = async () => {
       const orderData = response.data?.data || response.data
       console.log('주문 생성 성공:', orderData)
       
-      // 주문 ID 추출
-      const orderId = orderData?.orderId || orderData?.id
+      // 주문 ID 추출 (장바구니 주문은 배열로 올 수 있음)
+      const firstOrder = Array.isArray(orderData) ? orderData[0] : orderData
+      const orderId = firstOrder?.orderId || firstOrder?.id
       if (!orderId) {
         throw new Error('주문 ID를 받지 못했습니다.')
       }
-      router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value } })
+      const firstName = orderItems.value[0]?.groupPurchase?.title || '공동구매'
+      const orderName = orderItems.value.length > 1
+        ? `${firstName} 외 ${orderItems.value.length - 1}건`
+        : firstName
+      router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value, groupPurchaseName: orderName } })
     } else {
       // 개별 주문
       if (orderItems.value.length === 0) {
@@ -429,7 +434,8 @@ const handleOrderSubmit = async () => {
         throw new Error('주문 ID를 받지 못했습니다.')
       }
       
-      router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value } })
+      const groupPurchaseName = item.groupPurchase?.title || '공동구매'
+      router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value, groupPurchaseName } })
     }
   } catch (error) {
     console.error('주문 실패:', error)

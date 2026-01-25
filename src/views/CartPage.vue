@@ -56,8 +56,6 @@
             </div>
             <div class="item-body">
               <div class="item-head">
-                <p class="cart-id">장바구니 ID: {{ item.cartId }}</p>
-                <p class="member-id">회원 ID: {{ item.memberId }}</p>
                 <h2 v-if="item.groupPurchase">{{ item.groupPurchase.title || '공동구매 상품' }}</h2>
                 <h2 v-else>공동구매 ID: {{ item.groupPurchaseId }}</h2>
                 <p class="option">수량: {{ item.quantity }}개</p>
@@ -81,10 +79,6 @@
                 </div>
               </div>
               <div class="item-footer">
-                <div class="date-info">
-                  <span>생성일: {{ formatDate(item.createdAt) }}</span>
-                  <span>수정일: {{ formatDate(item.updatedAt) }}</span>
-                </div>
                 <button 
                   class="link-btn" 
                   @click="removeItem(item.cartId)"
@@ -141,18 +135,6 @@ const items = ref([])
 const loading = ref(false)
 const updatingItems = ref(new Set()) // 수정 중인 항목 ID들
 const selectedItems = ref(new Set()) // 선택된 장바구니 항목 ID들
-
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 const loadCartItems = async () => {
   try {
@@ -558,24 +540,9 @@ onMounted(() => {
   gap: 12px;
 }
 
-.cart-id,
-.member-id {
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 4px;
-}
-
 .category {
   color: #ffffff;
   font-weight: 600;
-}
-
-.date-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: #999;
 }
 
 .item-body h2 {

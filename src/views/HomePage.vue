@@ -811,6 +811,113 @@ onBeforeUnmount(() => {
   background: #0a0a0a;
 }
 
+body.theme-light .home-page {
+  background: #ffffff;
+  color: #111111;
+}
+
+body.theme-light .hero {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e2e7;
+}
+
+body.theme-light .hero-background {
+  background: none;
+  opacity: 1;
+}
+
+body.theme-light .hero-content {
+  color: #111111;
+}
+
+body.theme-light .hero-title,
+body.theme-light .hero-subtitle {
+  color: #111111;
+}
+
+body.theme-light .search-box {
+  background: #ffffff;
+  border: 1px solid #d0d0d6;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .search-input {
+  color: #111111;
+}
+
+body.theme-light .search-input::placeholder {
+  color: #777777;
+}
+
+body.theme-light .section-title,
+body.theme-light .view-all {
+  color: #111111;
+}
+
+body.theme-light .view-all:hover {
+  color: #444444;
+}
+
+body.theme-light .section-muted,
+body.theme-light .categories-section {
+  background: #ffffff;
+  border-color: #e2e2e7;
+}
+
+body.theme-light .category-card,
+body.theme-light .product-card,
+body.theme-light .benefit-card,
+body.theme-light .review-card,
+body.theme-light .promotion-card {
+  background: #ffffff;
+  color: #111111;
+  border-color: #e2e2e7;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .product-info,
+body.theme-light .product-category,
+body.theme-light .product-title,
+body.theme-light .price-row,
+body.theme-light .original-price,
+body.theme-light .discount-rate,
+body.theme-light .current-price,
+body.theme-light .progress-text,
+body.theme-light .progress-target,
+body.theme-light .time-left,
+body.theme-light .section-reason {
+  color: #111111;
+}
+
+body.theme-light .original-price,
+body.theme-light .section-reason {
+  color: #666666;
+}
+
+body.theme-light .progress-bar {
+  background: #e6e6ea;
+}
+
+body.theme-light .category-card:hover,
+body.theme-light .product-card:hover {
+  border-color: #d0d0d6;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-light .badge {
+  color: #111111;
+}
+
+body.theme-light .btn-outline {
+  color: #111111;
+  border-color: #d0d0d6;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f2f2f5;
+  border-color: #c8c8ce;
+}
+
 .categories-scroll.dragging {
   cursor: grabbing;
 }

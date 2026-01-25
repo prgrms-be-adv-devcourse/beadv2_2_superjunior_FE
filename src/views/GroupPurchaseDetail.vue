@@ -40,8 +40,8 @@
               </button>
             </div>
           </div>
+          <h3 class="description-title">상품소개</h3>
           <div class="description">
-            <h3>설명</h3>
             <div v-if="renderedDescription" v-html="renderedDescription"></div>
             <p v-else>설명이 없습니다.</p>
           </div>
@@ -482,6 +482,10 @@ watch(() => props.id, () => {
   background: #f59f00;
   color: #fff3bf;
 }
+body.theme-light .status-badge.scheduled {
+  background: #f59f00;
+  color: #fff3bf;
+}
 
 .status-badge.open {
   background: #51cf66;
@@ -552,7 +556,7 @@ watch(() => props.id, () => {
 
 .product-link a {
   display: inline-block;
-  color: #51cf66;
+  color: #339af0;
   text-decoration: none;
   font-size: 16px;
   font-weight: 600;
@@ -566,8 +570,8 @@ watch(() => props.id, () => {
 
 .btn-product-detail {
   background: transparent;
-  color: #51cf66;
-  border: 2px solid #51cf66;
+  color: #339af0;
+  border: 2px solid #339af0;
   padding: 10px 20px;
   border-radius: 12px;
   font-size: 16px;
@@ -577,10 +581,18 @@ watch(() => props.id, () => {
 }
 
 .btn-product-detail:hover {
-  background: #51cf66;
+  background: #339af0;
   color: #0a0a0a;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
+  box-shadow: 0 4px 12px rgba(51, 154, 240, 0.3);
+}
+
+.description-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .description {
@@ -588,19 +600,49 @@ watch(() => props.id, () => {
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   padding: 24px;
-}
-
-.description h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 12px;
+  text-align: center;
 }
 
 .description p {
   font-size: 16px;
-  line-height: 1.8;
+  line-height: 2.4;
   color: #e0e0e0;
+}
+
+.description div,
+.description p {
+  text-align: center;
+}
+
+body.theme-light .description-title {
+  color: #111111;
+}
+
+body.theme-light .description {
+  background: #ffffff;
+  border-color: #e2e2e7;
+}
+
+body.theme-light .description p,
+body.theme-light .description div {
+  color: #111111;
+}
+
+body.theme-light .participate-card {
+  background: #ffffff;
+  border: 2px solid #51cf66;
+}
+
+body.theme-light .participate-input label,
+body.theme-light .participate-total span {
+  color: #333333;
+}
+
+body.theme-light .participate-input input,
+body.theme-light .participate-total {
+  background: #ffffff;
+  border-color: #51cf66;
+  color: #111111;
 }
 
 .sidebar {

@@ -1936,7 +1936,7 @@ const selectProduct = ref(null)
 
 // 결제 페이지로 이동
 const goToPayment = (orderId) => {
-  router.push({ name: 'order-payment', params: { orderId } })
+  router.push({ name: 'order-payment', query: { orderId } })
 }
 
 const viewOrderDetail = async (orderId) => {

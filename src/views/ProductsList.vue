@@ -867,6 +867,77 @@ onMounted(() => {
   transition: all 0.3s;
 }
 
+body.theme-light .products-page,
+body.theme-light .filters,
+body.theme-light .recommend-section,
+body.theme-light .product-grid-section {
+  background: #ffffff;
+  color: #111111;
+  border-color: #e2e2e7;
+}
+
+body.theme-light .chip,
+body.theme-light .category-btn {
+  background: #f5f5f7;
+  color: #111111;
+  border-color: #d0d0d6;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-light .chip.active,
+body.theme-light .category-btn.active {
+  background: #111111;
+  color: #ffffff;
+  border-color: #111111;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+body.theme-light .search input,
+body.theme-light .sort select {
+  background: #ffffff;
+  color: #111111;
+  border-color: #d0d0d6;
+}
+
+body.theme-light .search input:focus,
+body.theme-light .sort select:focus {
+  border-color: #111111;
+  background: #ffffff;
+}
+
+body.theme-light .sort {
+  color: #111111;
+}
+
+body.theme-light .product-card {
+  background: #ffffff;
+  color: #111111;
+  border-color: #e2e2e7;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .product-category,
+body.theme-light .product-title,
+body.theme-light .price-row,
+body.theme-light .original-price,
+body.theme-light .discount-rate,
+body.theme-light .current-price,
+body.theme-light .progress-text,
+body.theme-light .progress-target,
+body.theme-light .time,
+body.theme-light .section-title {
+  color: #111111;
+}
+
+body.theme-light .original-price,
+body.theme-light .discount-rate {
+  color: #666666;
+}
+
+body.theme-light .progress-bar {
+  background: #e6e6ea;
+}
+
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
