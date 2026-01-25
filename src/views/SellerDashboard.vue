@@ -371,8 +371,15 @@
                 </div>
               </div>
               <div v-else class="order-summary">
-                <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                <p class="order-price">단가: ₩{{ (order.price||0).toLocaleString() || '-' }}</p>
+                <div class="order-summary-left">
+                  <p v-if="order.groupPurchaseName" class="order-gp-name">
+                    {{ order.groupPurchaseName }}
+                  </p>
+                </div>
+                <div class="order-summary-right">
+                  <p class="order-quantity label-bold">수량: {{ order.quantity }}개</p>
+                  <p class="order-price label-bold">단가: ₩{{ (order.price||0).toLocaleString() || '-' }}</p>
+                </div>
               </div>
               <div class="order-footer">
                 <span class="order-total">총 결제금액: ₩{{ (order.totalAmount||0).toLocaleString() ?? '0' }}</span>
@@ -2105,6 +2112,25 @@ onMounted(() => {
   font-size: 13px;
 }
 
+.order-gp-name {
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(56, 189, 248, 0.14));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.label-bold {
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .order-status {
   padding: 6px 14px;
   border-radius: 20px;
@@ -2175,6 +2201,19 @@ onMounted(() => {
   padding: 12px;
   background: #0f0f0f;
   border-radius: 8px;
+}
+
+.order-summary-left {
+  width: 100%;
+  text-align: left;
+}
+
+.order-summary-right {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .order-quantity,
