@@ -509,8 +509,15 @@
                     </div>
                   </div>
                   <div v-else class="order-summary">
-                    <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                    <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+                    <div class="order-summary-left">
+                      <p v-if="order.groupPurchaseName" class="order-gp-name">
+                        {{ order.groupPurchaseName }}
+                      </p>
+                    </div>
+                    <div class="order-summary-right">
+                      <p class="order-quantity label-bold">수량: {{ order.quantity }}개</p>
+                      <p class="order-price label-bold">단가: ₩{{ formatPrice(order.price) }}</p>
+                    </div>
                   </div>
                   <div class="order-footer">
                     <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
@@ -586,16 +593,23 @@
                 <div class="order-list">
                   <div v-for="order in cancelledOrders" :key="order.orderId" class="order-item">
                     <div class="order-header">
-                      <div>
-                        <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                        <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
-                      </div>
+                    <div>
+                      <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
+                    </div>
                       <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
                     </div>
                     <div class="order-summary">
-                      <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                      <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
-                      <p v-if="order.reason" class="cancel-reason">취소 사유: {{ order.reason }}</p>
+                      <div class="order-summary-left">
+                        <p v-if="order.groupPurchaseName" class="order-gp-name">
+                          {{ order.groupPurchaseName }}
+                        </p>
+                      </div>
+                      <div class="order-summary-right">
+                        <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                        <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+                        <p v-if="order.reason" class="cancel-reason">취소 사유: {{ order.reason }}</p>
+                      </div>
                     </div>
                     <div class="order-footer">
                       <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
@@ -1244,16 +1258,36 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
 import api, { groupPurchaseApi, productApi, notificationSettingApi, pointApi } from '@/api/axios'
 
 const router = useRouter()
+const route = useRoute()
 
 // 활성 메뉴 (기본값: 프로필)
 const activeMenu = ref('profile')
+
+const syncActiveMenuFromRoute = () => {
+  const tab = route.query.tab
+  const allowedTabs = [
+    'profile',
+    'address',
+    'point',
+    'account-settings',
+    'notification-settings',
+    'orders',
+    'cancelled-orders',
+    'seller-center',
+    'seller-sales',
+    'seller-settlement'
+  ]
+  if (typeof tab === 'string' && allowedTabs.includes(tab)) {
+    activeMenu.value = tab
+  }
+}
 
 // 판매자 센터 데이터
 const sellerAccountInfo = ref({
@@ -1576,6 +1610,13 @@ watch(activeMenu, (newMenu) => {
     }
   }
 })
+
+watch(
+  () => route.query.tab,
+  () => {
+    syncActiveMenuFromRoute()
+  }
+)
 
 const userInfo = ref({
   name: '',
@@ -2178,6 +2219,7 @@ const getStatusText = (status) => {
 // }
 
 onMounted(async () => {
+  syncActiveMenuFromRoute()
   // 저장된 사용자 정보 불러오기
   const savedUserData = localStorage.getItem('user_data')
   if (savedUserData) {
@@ -3861,6 +3903,25 @@ textarea:focus {
   font-size: 13px;
 }
 
+.order-gp-name {
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(56, 189, 248, 0.14));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.label-bold {
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .order-status {
   padding: 6px 12px;
   border-radius: 20px;
@@ -3934,6 +3995,19 @@ textarea:focus {
   padding: 12px;
   background: #0f0f0f;
   border-radius: 8px;
+}
+
+.order-summary-left {
+  width: 100%;
+  text-align: left;
+}
+
+.order-summary-right {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .order-quantity,
