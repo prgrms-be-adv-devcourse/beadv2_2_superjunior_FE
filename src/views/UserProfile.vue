@@ -515,7 +515,20 @@
                   <div class="order-footer">
                     <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
                     <div class="order-actions">
-                      <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
+                      <button
+                        v-if="order.status?.toUpperCase() === 'PENDING'"
+                        class="btn btn-primary btn-sm"
+                        @click="goToPayment(order.orderId)"
+                      >
+                        결제하기
+                      </button>
+                      <button
+                        v-else
+                        class="btn btn-outline btn-sm"
+                        @click="viewOrderDetail(order.orderId)"
+                      >
+                        상세보기
+                      </button>
                       <button
                         v-if="canCancelOrder(order)"
                         class="btn btn-danger btn-sm"
@@ -1685,6 +1698,11 @@ const selectedOrder = ref(null)
 const selectGroupPurchase = ref(null)
 const selectProduct = ref(null)
 
+// 결제 페이지로 이동
+const goToPayment = (orderId) => {
+  router.push({ name: 'order-payment', params: { orderId } })
+}
+
 const viewOrderDetail = async (orderId) => {
   try {
     // 1️⃣ 주문 상세
@@ -2273,11 +2291,11 @@ const closeOrderDetailModal = () => {
   showOrderDetailModal.value = false
 }
 
-// 주문 취소 가능 여부 확인 (주문 확정 전에만 가능)
+// 주문 취소 가능 여부 확인 (결제 완료 또는 공동구매 성공 상태만 가능)
 const canCancelOrder = (order) => {
   if (!order || !order.status) return false
 
-  const cancelableStatuses = ['PENDING', 'IN_PROGRESS', 'SUCCESS']
+  const cancelableStatuses = ['PAYMENT_COMPLETED', 'GROUP_PURCHASE_SUCCESS']
   return cancelableStatuses.includes(order.status.toUpperCase())
 }
 
