@@ -88,6 +88,13 @@
                 <span>판매 목록</span>
               </button>
               <button
+                :class="['nav-item', { active: activeMenu === 'seller-orders' }]"
+                @click="openSellerMenu('seller-orders')"
+              >
+                <span class="nav-icon">📦</span>
+                <span>주문 현황</span>
+              </button>
+              <button
                 :class="['nav-item', { active: activeMenu === 'seller-settlement' }]"
                 @click="openSellerMenu('seller-settlement')"
               >
@@ -647,7 +654,6 @@
             class="content-section seller-center"
           >
             <h2 class="section-title">판매자 센터</h2>
-
             <div class="seller-center-grid">
               <div class="seller-card seller-info-card">
                 <div class="card-header">
@@ -754,21 +760,6 @@
                     <dd>{{ sellerAccountInfo.email || '-' }}</dd>
                   </div>
                 </dl>
-              </div>
-
-              <div class="seller-card order-card">
-                <div class="card-header">
-                  <div>
-                    <p class="card-subtitle">주문 목록</p>
-                    <h3>실시간 주문 현황</h3>
-                  </div>
-                  <button class="link-button">
-                    새로고침
-                  </button>
-                </div>
-                <div class="empty-state-lg">
-                  <p>주문 내역이 없습니다</p>
-                </div>
               </div>
 
               <div class="seller-card inquiry-card">
@@ -939,6 +930,98 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <!-- 주문 현황 -->
+          <section
+            v-if="isSeller && activeMenu === 'seller-orders'"
+            class="content-section seller-center"
+          >
+            <h2 class="section-title">주문 현황</h2>
+            <div v-if="sellerGroupPurchasesLoading && sellerGroupPurchasesAll.length === 0" class="mini-loading">
+              <p>공동구매 정보를 불러오는 중입니다...</p>
+            </div>
+            <div v-else-if="sellerGroupPurchasesAll.length === 0" class="mini-empty">
+              <p>등록된 공동구매가 없습니다.</p>
+            </div>
+            <div v-else class="seller-orders-grid">
+              <article
+                v-for="gp in sellerGroupPurchasesAll"
+                :key="gp.id"
+                class="seller-order-card"
+              >
+                <div class="seller-order-header">
+                  <span class="status-badge" :class="gp.status?.toLowerCase()">{{ getStatusText(gp.status) }}</span>
+                  <span class="seller-order-dates">
+                    {{ gp.endDate ? getTimeRemaining(gp.endDate) : '기간 미정' }}
+                  </span>
+                </div>
+                <div class="seller-order-body">
+                  <div class="seller-order-info">
+                    <p class="seller-order-title">{{ gp.title }}</p>
+                    <p class="seller-order-sub">{{ gp.category }}</p>
+                  </div>
+                  <div class="seller-order-price">
+                    <span class="current-price">₩{{ formatPrice(gp.discountPrice) }}</span>
+                    <span class="original-price">₩{{ formatPrice(gp.originalPrice) }}</span>
+                  </div>
+                  <div class="seller-order-progress">
+                    <div class="progress-info">
+                      <span>{{ gp.currentCount }} / {{ gp.maxQuantity }}명</span>
+                      <span>{{ Math.round((gp.currentCount / gp.maxQuantity) * 100) }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        :style="{ width: `${Math.min((gp.currentCount / gp.maxQuantity) * 100, 100)}%` }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="seller-order-actions">
+                  <button
+                    class="btn btn-outline btn-sm"
+                    @click="toggleGroupPurchaseOrders(gp.id)"
+                  >
+                    {{ expandedGroupPurchaseId === gp.id ? '주문 목록 닫기' : '주문 목록 보기' }}
+                  </button>
+                  <button class="btn btn-outline btn-sm" @click="goGroupPurchaseDetail(gp.id)">
+                    상세 보기
+                  </button>
+                </div>
+                <div
+                  v-if="expandedGroupPurchaseId === gp.id"
+                  class="order-dropdown"
+                >
+                  <div v-if="sellerOrdersLoading" class="mini-loading">
+                    <p>주문 정보를 불러오는 중입니다...</p>
+                  </div>
+                  <div
+                    v-else-if="getOrdersForGroupPurchase(gp).length === 0"
+                    class="mini-empty"
+                  >
+                    <p>주문 내역이 없습니다.</p>
+                  </div>
+                  <div v-else class="order-dropdown-list">
+                    <div
+                      v-for="order in getOrdersForGroupPurchase(gp)"
+                      :key="order.orderId"
+                      class="order-dropdown-item"
+                    >
+                      <div class="order-dropdown-left">
+                        <p class="order-id">#{{ order.orderId }}</p>
+                        <p class="order-date">{{ formatDateShort(order.createdAt) }}</p>
+                        <p class="order-buyer">{{ order.buyerName }}</p>
+                      </div>
+                      <div class="order-dropdown-right">
+                        <span class="order-amount">₩{{ formatPrice(order.totalAmount) }}</span>
+                        <span class="order-status" :class="order.status">{{ getStatusText(order.status) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
             </div>
           </section>
 
@@ -1282,6 +1365,7 @@ const syncActiveMenuFromRoute = () => {
     'cancelled-orders',
     'seller-center',
     'seller-sales',
+    'seller-orders',
     'seller-settlement'
   ]
   if (typeof tab === 'string' && allowedTabs.includes(tab)) {
@@ -1327,6 +1411,11 @@ const sellerGroupPurchasesOpenCount = computed(() => {
   return sellerGroupPurchasesAll.value.filter(gp => (gp.status || '').toUpperCase() === 'OPEN').length
 })
 
+const sellerOrdersAll = ref([])
+const sellerOrdersLoading = ref(false)
+const sellerOrdersLoaded = ref(false)
+const expandedGroupPurchaseId = ref(null)
+
 const sellerSalesStats = computed(() => [
   { label: '등록된 상품', value: formatCount(sellerProductsAll.value.length), subtext: '현재 등록된 상품 수' },
   { label: '진행 중 공동구매', value: formatCount(sellerGroupPurchasesOpenCount.value), subtext: 'OPEN 상태 공동구매' },
@@ -1335,6 +1424,32 @@ const sellerSalesStats = computed(() => [
 
 const sellerProductsPreview = computed(() => sellerProductsAll.value.slice(0, 3))
 const sellerGroupPurchasesPreview = computed(() => sellerGroupPurchasesAll.value.slice(0, 3))
+const ordersByGroupPurchase = computed(() => {
+  const map = {}
+  sellerOrdersAll.value.forEach(order => {
+    const key = (order.groupPurchaseId || order.groupPurchaseName || '').toString()
+    if (!map[key]) map[key] = []
+    map[key].push(order)
+  })
+  return map
+})
+
+const getOrdersForGroupPurchase = (group) => {
+  if (!group) return []
+  const keyId = group.id ? group.id.toString() : null
+  if (keyId && ordersByGroupPurchase.value[keyId] && ordersByGroupPurchase.value[keyId].length) {
+    return ordersByGroupPurchase.value[keyId]
+  }
+  const keyName = group.title || group.groupPurchaseName
+  if (keyName && ordersByGroupPurchase.value[keyName]) {
+    return ordersByGroupPurchase.value[keyName]
+  }
+  return []
+}
+
+const toggleGroupPurchaseOrders = (groupId) => {
+  expandedGroupPurchaseId.value = expandedGroupPurchaseId.value === groupId ? null : groupId
+}
 
 const sellerInquiries = ref([
   {
@@ -1497,6 +1612,40 @@ const loadSellerGroupPurchasesSummary = async () => {
   }
 }
 
+const loadSellerOrdersSummary = async () => {
+  if (sellerOrdersLoading.value) return
+  sellerOrdersLoading.value = true
+  try {
+    const response = await authAPI.getSellerOrders({
+      page: 0,
+      size: 20,
+      sort: 'createdAt,desc'
+    })
+    const raw = response?.data || response
+    const list = raw?.content || raw || []
+    sellerOrdersAll.value = list.map(order => ({
+      orderId: order.orderId || order.id,
+      status: order.status,
+      quantity: order.quantity,
+      price: order.price,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      groupPurchaseId: order.groupPurchaseId || order.groupPurchase?.groupPurchaseId || order.purchaseId,
+      groupPurchaseName: order.groupPurchaseName || order.groupPurchase?.title || order.title,
+      buyerName: order.customerName || order.buyerName || order.name || '고객',
+      email: order.email || order.buyerEmail || '',
+      phoneNumber: order.phoneNumber || '',
+      address: order.address || ''
+    }))
+  } catch (error) {
+    console.error('판매자 주문 정보 로드 실패:', error)
+    sellerOrdersAll.value = []
+  } finally {
+    sellerOrdersLoading.value = false
+    sellerOrdersLoaded.value = true
+  }
+}
+
 const clearSellerInfoErrors = () => {
   sellerInfoErrors.value = {
     bankCode: '',
@@ -1581,6 +1730,9 @@ const ensureSellerSalesData = async () => {
   if (!sellerGroupPurchasesLoaded.value) {
     await loadSellerGroupPurchasesSummary()
   }
+  if (!sellerOrdersLoaded.value) {
+    await loadSellerOrdersSummary()
+  }
 }
 
 // 메뉴 변경 시 데이터 로드
@@ -1598,7 +1750,7 @@ watch(activeMenu, (newMenu) => {
   }
 
   // ✅ 판매자 메뉴 진입 시 판매자 센터 데이터 로드
-  if ((newMenu === 'seller-center' || newMenu === 'seller-sales' || newMenu === 'seller-settlement') && isSeller.value) {
+  if ((['seller-center', 'seller-sales', 'seller-orders', 'seller-settlement'].includes(newMenu)) && isSeller.value) {
     ensureSellerSalesData()
   }
 
@@ -2113,6 +2265,20 @@ const formatDateShort = (dateString) => {
   } catch (e) {
     return dateString
   }
+}
+
+const getTimeRemaining = (endDate) => {
+  if (!endDate) return '기간 미정'
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end.getTime() - now.getTime()
+  if (diff <= 0) return '종료됨'
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  if (days > 0) return `${days}일 ${hours}시간 남음`
+  if (hours > 0) return `${hours}시간 ${minutes}분 남음`
+  return `${minutes}분 남음`
 }
 
 const normalizeHistories = (response) => {
@@ -2859,6 +3025,14 @@ const saveNotificationSettings = async () => {
   gap: 24px;
 }
 
+.seller-sales-grid.top-stats {
+  margin-bottom: 24px;
+}
+
+.seller-card.order-card.compact {
+  max-width: 420px;
+}
+
 .seller-edit-form form {
   display: flex;
   flex-direction: column;
@@ -3051,6 +3225,163 @@ const saveNotificationSettings = async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+.order-summary-card {
+  grid-column: 1 / -1;
+}
+
+.order-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.order-summary-item:last-child {
+  border-bottom: none;
+}
+
+.order-summary-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-id {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.order-date {
+  margin: 0;
+  color: #a0a0a0;
+  font-size: 12px;
+}
+
+.order-summary-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.order-amount {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.order-status {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+}
+
+.seller-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.seller-order-card {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.seller-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.seller-order-dates {
+  color: #a0a0a0;
+  font-size: 13px;
+}
+
+.seller-order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seller-order-title {
+  margin: 0;
+  font-size: 18px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.seller-order-sub {
+  margin: 0;
+  color: #a0a0a0;
+  font-size: 13px;
+}
+
+.seller-order-price {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.seller-order-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seller-order-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.order-dropdown {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 16px;
+}
+
+.order-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.order-dropdown-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.order-dropdown-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-buyer {
+  margin: 0;
+  color: #c0c0c0;
+  font-size: 13px;
 }
 
 .card-header {
