@@ -1241,16 +1241,36 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
 import api, { groupPurchaseApi, productApi, notificationSettingApi, pointApi } from '@/api/axios'
 
 const router = useRouter()
+const route = useRoute()
 
 // 활성 메뉴 (기본값: 프로필)
 const activeMenu = ref('profile')
+
+const syncActiveMenuFromRoute = () => {
+  const tab = route.query.tab
+  const allowedTabs = [
+    'profile',
+    'address',
+    'point',
+    'account-settings',
+    'notification-settings',
+    'orders',
+    'cancelled-orders',
+    'seller-center',
+    'seller-sales',
+    'seller-settlement'
+  ]
+  if (typeof tab === 'string' && allowedTabs.includes(tab)) {
+    activeMenu.value = tab
+  }
+}
 
 // 판매자 센터 데이터
 const sellerAccountInfo = ref({
@@ -1573,6 +1593,13 @@ watch(activeMenu, (newMenu) => {
     }
   }
 })
+
+watch(
+  () => route.query.tab,
+  () => {
+    syncActiveMenuFromRoute()
+  }
+)
 
 const userInfo = ref({
   name: '',
@@ -2170,6 +2197,7 @@ const getStatusText = (status) => {
 // }
 
 onMounted(async () => {
+  syncActiveMenuFromRoute()
   // 저장된 사용자 정보 불러오기
   const savedUserData = localStorage.getItem('user_data')
   if (savedUserData) {

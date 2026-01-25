@@ -8,7 +8,7 @@
         <h1>주문이 완료되었습니다</h1>
         <p class="message">주문이 성공적으로 접수되었습니다.</p>
         <div class="actions">
-          <router-link to="/me/profile" class="btn btn-primary">주문 내역 보기</router-link>
+          <router-link to="/me/profile?tab=orders" class="btn btn-primary">주문 내역 보기</router-link>
           <router-link to="/" class="btn btn-outline">홈으로 가기</router-link>
         </div>
       </div>
