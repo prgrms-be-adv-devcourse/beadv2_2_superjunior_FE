@@ -218,11 +218,11 @@ export const authAPI = {
         return response.data.data
       },
 
-    searchAIRecommandPurchases: async ({
+    searchAIRecommendPurchases: async ({
                keyword = '',
                category = ''
            } = {}) => {
-        const response = await api.get('/ai/recommandations', {
+        const response = await api.get('/ai/recommendations', {
             params: {
                 keyword,
                 category

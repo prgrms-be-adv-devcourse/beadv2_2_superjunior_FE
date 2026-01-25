@@ -553,7 +553,7 @@ const recommendedProducts = ref([])
 const recommendedReason = ref('')
 
 const fetchRecommendedProducts = async () => {
-  const res = await auth.searchAIRecommandPurchases({
+  const res = await auth.searchAIRecommendPurchases({
     status: 'OPEN',
     sort: 'currentQuantity,desc',
     size: 3

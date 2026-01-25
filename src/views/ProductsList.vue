@@ -479,7 +479,7 @@ const mapToProductCard = (gp) => {
 const fetchRecommendedProducts = async () => {
   recommendedLoading.value = true
   try {
-    const res = await auth.searchAIRecommandPurchases({
+    const res = await auth.searchAIRecommendPurchases({
       keyword: keyword.value,
       category: selectedCategory.value
     })
