@@ -898,7 +898,7 @@
               </div>
               <div class="hero-actions">
                 <button class="btn btn-primary" @click="goToProductRegister">+ 상품 등록</button>
-                <button class="btn btn-primary" @click="goToGroupPurchaseManage">+ 공동구매 등록</button>
+                <button class="btn btn-primary" @click="goToGroupPurchaseCreate">+ 공동구매 등록</button>
               </div>
             </div>
 
@@ -2239,6 +2239,10 @@ const goToSellerProducts = () => {
 
 const goToProductRegister = () => {
   router.push('/seller/register/product-register')
+}
+
+const goToGroupPurchaseCreate = () => {
+  router.push('/group-purchases/create')
 }
 
 const goToGroupPurchaseManage = () => {
