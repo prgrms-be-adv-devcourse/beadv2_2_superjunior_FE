@@ -22,8 +22,7 @@ jobs:
         with:
           source-directory: 'output'
           destination-github-username: Huiyeongkim
-          destination-repository-name: 
-beadv2_2_superjunior_FE
+          destination-repository-name: beadv2_2_superjunior_FE
           user-email: ${{ secrets.SUPERJUNIOR_ACCOUNT_EMAIL }}
           commit-message: ${{ github.event.commits[0].message }}
           target-branch: master
