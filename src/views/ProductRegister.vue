@@ -704,6 +704,84 @@ onBeforeUnmount(() => {
   background: #1e293b !important;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
 }
+
+/* 라이트 모드 강제 적용 */
+body.theme-light .register-page {
+  background: #ffffff !important;
+}
+
+body.theme-light .page-header h1 {
+  color: #0f172a !important;
+}
+
+body.theme-light .page-header p {
+  color: #666666 !important;
+}
+
+body.theme-light .form-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .form-section h3 {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group label {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input,
+body.theme-light .form-group select,
+body.theme-light .form-group textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input:focus,
+body.theme-light .form-group select:focus,
+body.theme-light .form-group textarea:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .form-group input::placeholder,
+body.theme-light .form-group textarea::placeholder {
+  color: #999999 !important;
+}
+
+body.theme-light .form-hint {
+  color: #666666 !important;
+}
+
+body.theme-light .image-preview img {
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .upload-status {
+  color: #666666 !important;
+}
+
+body.theme-light .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+body.theme-light .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
+}
 </style>
 
 

@@ -998,6 +998,126 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 }
+
+/* 라이트 모드 스타일 */
+body.theme-light .group-purchase-create-page {
+  background: #ffffff !important;
+}
+
+body.theme-light .page-header h1 {
+  color: #0f172a !important;
+}
+
+body.theme-light .page-header p {
+  color: #666666 !important;
+}
+
+body.theme-light .form-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .form-section h3 {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group label {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input,
+body.theme-light .form-group select,
+body.theme-light .form-group textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input:focus,
+body.theme-light .form-group select:focus,
+body.theme-light .form-group textarea:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .form-group input::placeholder,
+body.theme-light .form-group textarea::placeholder {
+  color: #999999 !important;
+}
+
+body.theme-light .tiptap-editor {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .tiptap-editor:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .time-period-select,
+body.theme-light .time-input {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .time-period-select:focus,
+body.theme-light .time-input:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0) !important;
+}
+
+body.theme-light .form-hint {
+  color: #666666 !important;
+}
+
+body.theme-light .selected-product-info {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .info-label {
+  color: #666666 !important;
+}
+
+body.theme-light .info-value {
+  color: #0f172a !important;
+}
+
+body.theme-light .image-preview-item {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .upload-status {
+  color: #666666 !important;
+}
+
+body.theme-light .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+body.theme-light .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
+}
 </style>
 
 
