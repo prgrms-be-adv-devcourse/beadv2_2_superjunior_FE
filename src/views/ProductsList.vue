@@ -100,12 +100,12 @@
               <div class="card-footer">
                 <span class="time">⏰ {{ product.timeLeft }}</span>
                 <div class="footer-actions">
-                  <button 
+                  <!-- <button 
                     class="btn btn-outline btn-sm"
                     @click.stop="addToCart(product)"
                   >
                     장바구니
-                  </button>
+                  </button> -->
                   <button 
                     class="btn btn-primary btn-sm"
                     @click.stop="goToDetail(product.id)"
@@ -277,12 +277,12 @@
               <div class="card-footer">
                 <span class="time">⏰ {{ product.timeLeft }}</span>
                 <div class="footer-actions">
-                  <button 
+                  <!-- <button 
                     class="btn btn-outline btn-sm"
                     @click.stop="addToCart(product)"
                   >
                     장바구니
-                  </button>
+                  </button> -->
                   <button 
                     class="btn btn-primary btn-sm"
                     @click.stop="goToDetail(product.id)"
@@ -323,7 +323,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { groupPurchaseApi, cartApi } from '@/api/axios'
+import { groupPurchaseApi } from '@/api/axios'
 import { authAPI as auth } from '@/api/auth'
 
 const route = useRoute()
@@ -412,6 +412,19 @@ const categoryImages = {
   'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
 }
 
+// 카테고리 한글 변환 맵
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
+
 /* ======================
  * ✅ 정렬 매핑 (서버 sort 파라미터)
  * ====================== */
@@ -467,11 +480,15 @@ const mapToProductCard = (gp) => {
       ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)
       : 0
 
+  // 카테고리를 한글로 변환
+  const categoryCode = p.category || '기타'
+  const categoryKorean = categoryMap[categoryCode] || categoryCode
+
   return {
     id: gp.groupPurchaseId,
     title: gp.title,
     subtitle: '',
-    category: p.category || '기타',
+    category: categoryKorean,
     image,
     originalPrice,
     currentPrice: discountedPrice,
@@ -569,22 +586,22 @@ const goToDetail = (id) => {
   router.push({ name: 'group-purchase-detail', params: { id } })
 }
 
-const addToCart = async (product) => {
-  try {
-    const response = await cartApi.addToCart({
-      groupPurchaseId: product.id,
-      quantity: 1
-    })
-    console.log('장바구니 추가 성공:', response.data)
-    alert('장바구니에 담았습니다.')
-    // FloatingCart 업데이트 이벤트 발생
-    window.dispatchEvent(new CustomEvent('cart-updated'))
-  } catch (error) {
-    console.error('장바구니 담기 실패:', error)
-    const message = error.response?.data?.message || '장바구니 담기에 실패했습니다.'
-    alert(message)
-  }
-}
+// const addToCart = async (product) => {
+//   try {
+//     const response = await cartApi.addToCart({
+//       groupPurchaseId: product.id,
+//       quantity: 1
+//     })
+//     console.log('장바구니 추가 성공:', response.data)
+//     alert('장바구니에 담았습니다.')
+//     // FloatingCart 업데이트 이벤트 발생
+//     window.dispatchEvent(new CustomEvent('cart-updated'))
+//   } catch (error) {
+//     console.error('장바구니 담기 실패:', error)
+//     const message = error.response?.data?.message || '장바구니 담기에 실패했습니다.'
+//     alert(message)
+//   }
+// }
 
 watch(
   () => route.query,
@@ -616,7 +633,7 @@ onMounted(() => {
 
 <style scoped>
 .products-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
 }
 
@@ -631,7 +648,7 @@ onMounted(() => {
 }
 
 .page-hero .eyebrow {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -641,11 +658,11 @@ onMounted(() => {
 .page-hero h1 {
   font-size: 36px;
   margin-bottom: 12px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .page-hero .subtitle {
-  color: #999;
+  color: var(--muted);
 }
 
 .section-header {
@@ -659,14 +676,14 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 700;
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .section-reason {
   margin-left: 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #999;
+  color: var(--muted);
 }
 
 .skeleton-card {
@@ -706,7 +723,7 @@ onMounted(() => {
 }
 
 .filters {
-  background: #0a0a0a;
+  background: var(--bg);
   border-top: 1px solid #2a2a2a;
   border-bottom: 1px solid #2a2a2a;
   padding: 24px 0;
@@ -734,20 +751,22 @@ onMounted(() => {
 }
 
 .chip {
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid #2a2a2a;
-  background: #1a1a1a;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 14px;
   transition: all 0.2s;
 }
 
 .chip.active {
-  border-color: #ffffff;
-  color: #0a0a0a;
-  background: #ffffff;
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  font-weight: 600;
 }
 
 .filter-actions {
@@ -763,20 +782,20 @@ onMounted(() => {
 
 .search input {
   padding: 10px 14px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   min-width: 260px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .search input::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 .search input:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
@@ -805,14 +824,17 @@ onMounted(() => {
   gap: 4px;
   padding: 10px 14px;
   border-radius: 999px;
-  border: 1px solid #2a2a2a;
-  background: #1a1a1a;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
 }
 
 .category-btn.active {
-  border-color: #ffffff;
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  font-weight: 600;
 }
 
 .category-btn.more {
@@ -821,7 +843,7 @@ onMounted(() => {
 
 /* ✅ 정렬 스타일 */
 .sort {
-  color: #ffffff;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -831,17 +853,17 @@ onMounted(() => {
 .sort select {
   margin-left: 8px;
   padding: 10px 14px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  color: #ffffff;
+  color: var(--text);
   cursor: pointer;
   min-width: 160px;
 }
 
 .sort select:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
@@ -856,8 +878,8 @@ onMounted(() => {
 }
 
 .product-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   overflow: hidden;
   display: flex;
@@ -878,18 +900,30 @@ body.theme-light .product-grid-section {
 
 body.theme-light .chip,
 body.theme-light .category-btn {
-  background: #f5f5f7;
+  background: #ffffff;
   color: #111111;
   border-color: #d0d0d6;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-body.theme-light .chip.active,
-body.theme-light .category-btn.active {
-  background: #111111;
-  color: #ffffff;
-  border-color: #111111;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+/* 라이트 모드에서 선택된 버튼 - 최고 우선순위 */
+:global(body.theme-light) .chip.active,
+:global(body.theme-light) .category-btn.active {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #111111 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  font-weight: 600 !important;
+}
+
+/* 모든 자식 요소에도 하얀색 강제 적용 */
+:global(body.theme-light) .chip.active,
+:global(body.theme-light) .chip.active *,
+:global(body.theme-light) .chip.active span,
+:global(body.theme-light) .category-btn.active,
+:global(body.theme-light) .category-btn.active *,
+:global(body.theme-light) .category-btn.active span {
+  color: #ffffff !important;
 }
 
 body.theme-light .search input,
@@ -907,6 +941,17 @@ body.theme-light .sort select:focus {
 
 body.theme-light .sort {
   color: #111111;
+}
+
+body.theme-light .btn-primary {
+  background: #111111;
+  color: #ffffff;
+  border-color: #111111;
+}
+
+body.theme-light .btn-primary:hover {
+  background: #2a2a2a;
+  border-color: #2a2a2a;
 }
 
 body.theme-light .product-card {
@@ -936,6 +981,10 @@ body.theme-light .discount-rate {
 
 body.theme-light .progress-bar {
   background: #e6e6ea;
+}
+
+body.theme-light .progress-fill {
+  background: #111111;
 }
 
 .product-card:hover {
@@ -1005,16 +1054,16 @@ body.theme-light .badge {
 .card-body h2 {
   font-size: 20px;
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .card-body .subtitle {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .category {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 13px;
 }
@@ -1029,35 +1078,35 @@ body.theme-light .badge {
 .current-price {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .meta {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .discount {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   margin-right: 8px;
 }
 
 .original {
   text-decoration: line-through;
-  color: #666;
+  color: var(--muted);
 }
 
 .progress-head {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .progress-bar {
   height: 8px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
   margin-top: 8px;
@@ -1081,7 +1130,7 @@ body.theme-light .badge {
 
 .time {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .btn {
@@ -1095,20 +1144,22 @@ body.theme-light .badge {
 .btn-primary {
   background: #ffffff;
   color: #0a0a0a;
+  border: 1px solid var(--border);
 }
 
 .btn-primary:hover {
   background: #f0f0f0;
+  border-color: var(--text);
 }
 
 .btn-outline {
   border: 1px solid #3a3a3a;
   background: transparent;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
-  background: #2a2a2a;
+  background: var(--hover);
   border-color: #4a4a4a;
 }
 
@@ -1120,11 +1171,11 @@ body.theme-light .badge {
 .empty-state {
   text-align: center;
   padding: 80px 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .empty-state p {
-  color: #999;
+  color: var(--muted);
   margin-bottom: 16px;
 }
 
@@ -1141,9 +1192,9 @@ body.theme-light .badge {
   .page-btn {
     padding: 10px 18px;
     border-radius: 999px;
-    border: 1px solid #2a2a2a;
-    background: #1a1a1a;
-    color: #ffffff;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1152,7 +1203,7 @@ body.theme-light .badge {
   .page-btn:hover:not(:disabled) {
     background: #ffffff;
     color: #0a0a0a;
-    border-color: #ffffff;
+    border-color: var(--text);
   }
 
   .page-btn:disabled {
@@ -1165,7 +1216,7 @@ body.theme-light .badge {
     min-width: 80px;
     text-align: center;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--text);
   }
 
 @media (max-width: 768px) {
@@ -1199,5 +1250,27 @@ body.theme-light .badge {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+</style>
+
+<style>
+/* 라이트 모드에서 선택된 버튼 - 전역 스타일로 최고 우선순위 적용 */
+body.theme-light .chip.active,
+body.theme-light .category-btn.active {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #111111 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  font-weight: 600 !important;
+}
+
+/* 모든 자식 요소에도 하얀색 강제 적용 */
+body.theme-light .chip.active,
+body.theme-light .chip.active *,
+body.theme-light .chip.active span,
+body.theme-light .category-btn.active,
+body.theme-light .category-btn.active *,
+body.theme-light .category-btn.active span {
+  color: #ffffff !important;
 }
 </style>

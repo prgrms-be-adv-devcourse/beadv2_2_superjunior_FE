@@ -18,6 +18,7 @@ import SiteHeader from './components/SiteHeader.vue'
 
 html {
   scroll-behavior: smooth;
+  width: 100%;
 }  
  
 :root {
@@ -34,13 +35,13 @@ html {
 }
 
 body.theme-light {
-  --bg: #f7f7f8;
+  --bg: #f0f2f5;
   --text: #111111;
   --surface: #ffffff;
-  --border: #e2e2e7;
-  --border-strong: #d0d0d6;
+  --border: #e0e0e0;
+  --border-strong: #d0d0d0;
   --muted: #666666;
-  --hover: #f0f0f3;
+  --hover: #f5f5f5;
   --btn-primary-bg: #111111;
   --btn-primary-hover: #2a2a2a;
   --btn-primary-text: #ffffff;
@@ -48,6 +49,8 @@ body.theme-light {
 
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -58,73 +61,10 @@ body {
   line-height: 1.6;
 }
 
-body.theme-light,
-body.theme-light main,
-body.theme-light header,
-body.theme-light section,
-body.theme-light article,
-body.theme-light aside,
-body.theme-light .page,
-body.theme-light [class$='-page'],
-body.theme-light [class*='page-'],
-body.theme-light [class*='section'],
-body.theme-light [class*='card'],
-body.theme-light [class*='panel'],
-body.theme-light [class*='wrapper'] {
-  background: #ffffff !important;
-  color: #111111 !important;
-  border-color: #e2e2e7 !important;
-}
-
-body.theme-light .form-section,
-body.theme-light .info-card,
-body.theme-light .checkout-card,
-body.theme-light .cart-item,
-body.theme-light .selected-product-info,
-body.theme-light .detail-content,
-body.theme-light [class*='card'] {
-  background: #ffffff;
-  color: #111111;
-  border-color: #e2e2e7;
-}
-
-body.theme-light input,
-body.theme-light textarea,
-body.theme-light select {
-  background: #ffffff;
-  color: #111111;
-  border-color: #d0d0d6;
-}
-
-body.theme-light h1,
-body.theme-light h2,
-body.theme-light h3,
-body.theme-light h4,
-body.theme-light h5,
-body.theme-light h6,
-body.theme-light p,
-body.theme-light span,
-body.theme-light label,
-body.theme-light li,
-body.theme-light a {
-  color: #111111;
-}
-
-body.theme-light .section-reason,
-body.theme-light .form-hint,
-body.theme-light .muted,
-body.theme-light [class*='muted'] {
-  color: #666666 !important;
-}
-
-body.theme-light *:not(img):not(svg):not(video):not(canvas):not(.status-badge):not(.badge) {
-  background-color: #ffffff !important;
-  color: #111111 !important;
-  border-color: #e2e2e7 !important;
-}
 
 #app {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }

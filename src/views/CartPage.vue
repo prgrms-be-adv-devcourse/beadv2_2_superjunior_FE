@@ -373,7 +373,7 @@ onMounted(() => {
 
 <style scoped>
 .cart-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -394,23 +394,23 @@ onMounted(() => {
 
 .eyebrow {
   text-transform: uppercase;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
   letter-spacing: 0.05em;
   margin-bottom: 8px;
 }
 
 .cart-header h1 {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .subtitle {
-  color: #999;
+  color: var(--muted);
 }
 
 .summary-box {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px 20px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
@@ -419,12 +419,12 @@ onMounted(() => {
 
 .summary-box p {
   margin: 0;
-  color: #999;
+  color: var(--muted);
 }
 
 .summary-box strong {
   font-size: 24px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .cart-content {
@@ -444,8 +444,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   margin-bottom: 8px;
 }
@@ -461,7 +461,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -472,12 +472,12 @@ onMounted(() => {
 }
 
 .selected-count {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .clear-btn {
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   background: transparent;
   color: #ff6b6b;
   border-radius: 999px;
@@ -500,8 +500,8 @@ onMounted(() => {
 .cart-item {
   display: flex;
   gap: 16px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
@@ -509,7 +509,7 @@ onMounted(() => {
 }
 
 .cart-item.selected {
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #1f1f1f;
 }
 
@@ -523,7 +523,7 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #ffffff;
+  accent-color: var(--text);
 }
 
 .cart-item img {
@@ -541,16 +541,16 @@ onMounted(() => {
 }
 
 .category {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
 .item-body h2 {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .option {
-  color: #999;
+  color: var(--muted);
 }
 
 .item-meta {
@@ -560,36 +560,36 @@ onMounted(() => {
 }
 
 .item-meta .quantity-label {
-  color: #999;
+  color: var(--muted);
 }
 
 .price {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .quantity-control {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 .quantity-control button {
   width: 36px;
   height: 36px;
   border: none;
-  background: #1a1a1a;
-  color: #ffffff;
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .quantity-control button:hover:not(:disabled) {
-  background: #2a2a2a;
+  background: var(--hover);
 }
 
 .quantity-control button:disabled {
@@ -599,7 +599,7 @@ onMounted(() => {
 
 .quantity-control span {
   padding: 0 16px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .item-footer {
@@ -607,7 +607,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
 }
 
 .link-btn {
@@ -630,8 +630,8 @@ onMounted(() => {
 }
 
 .checkout-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -639,7 +639,7 @@ onMounted(() => {
 
 .checkout-card h3 {
   margin-bottom: 16px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .row {
@@ -650,20 +650,20 @@ onMounted(() => {
 }
 
 .row span {
-  color: #999;
+  color: var(--muted);
 }
 
 .row strong {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .row.total strong {
   font-size: 22px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .discount {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .checkout-card hr {
@@ -699,18 +699,18 @@ onMounted(() => {
 
 .notice {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   margin-top: 12px;
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .empty-state p {
-  color: #999;
+  color: var(--muted);
   margin-bottom: 16px;
 }
 

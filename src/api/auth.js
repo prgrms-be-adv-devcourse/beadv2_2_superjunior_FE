@@ -112,7 +112,16 @@ export const authAPI = {
       return response.data.data
     },
     getOrderDetail: async(orderId) =>{
-        const response = await api.get(`/orders/${orderId}`)
+        // 배열인 경우 첫 번째 값만 사용
+        let cleanOrderId = orderId
+        if (Array.isArray(orderId)) {
+          cleanOrderId = orderId[0]
+        }
+        // 문자열이고 콤마가 포함된 경우 첫 번째 값만 사용
+        if (typeof cleanOrderId === 'string' && cleanOrderId.includes(',')) {
+          cleanOrderId = cleanOrderId.split(',')[0].trim()
+        }
+        const response = await api.get(`/orders/${cleanOrderId}`)
         return response.data;
     },
     // 주문 취소

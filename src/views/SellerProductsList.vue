@@ -52,7 +52,10 @@
 
       <div v-else-if="sellerProducts.length === 0" class="empty-state">
         <p>등록된 상품이 없습니다.</p>
-        <router-link to="/seller/register/product-register" class="btn btn-primary">
+        <router-link
+          :to="{ path: '/seller/register/product-register', query: { from: route.fullPath } }"
+          class="btn btn-primary"
+        >
           상품 등록하기
         </router-link>
       </div>
@@ -137,10 +140,11 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { productApi } from '@/api/axios'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const page = ref(0)
@@ -673,6 +677,140 @@ onMounted(() => {
   text-align: center;
   font-weight: 600;
   color: #ffffff;
+}
+
+/* 라이트 모드 스타일 */
+body.theme-light .seller-products-page {
+  background: #ffffff !important;
+}
+
+body.theme-light .page-header h1 {
+  color: #0f172a !important;
+}
+
+body.theme-light .page-header p {
+  color: #666666 !important;
+}
+
+body.theme-light .filters-bar {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .filter-group label {
+  color: #0f172a !important;
+}
+
+body.theme-light .filter-group select,
+body.theme-light .filter-group input {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .filter-group select:focus,
+body.theme-light .filter-group input:focus {
+  border-color: #0f172a !important;
+}
+
+body.theme-light .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .btn-text {
+  color: #0f172a !important;
+}
+
+body.theme-light .empty-state {
+  color: #666666 !important;
+}
+
+body.theme-light .loading-state {
+  color: #666666 !important;
+}
+
+body.theme-light .product-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .product-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.theme-light .product-image-wrapper {
+  background: #f1f5f9 !important;
+}
+
+body.theme-light .product-category {
+  color: #666666 !important;
+}
+
+body.theme-light .product-title {
+  color: #0f172a !important;
+}
+
+body.theme-light .product-subtitle {
+  color: #666666 !important;
+}
+
+body.theme-light .current-price {
+  color: #0f172a !important;
+}
+
+body.theme-light .original-price {
+  color: #999999 !important;
+}
+
+body.theme-light .progress-text {
+  color: #666666 !important;
+}
+
+body.theme-light .progress-percent {
+  color: #0f172a !important;
+}
+
+body.theme-light .product-actions {
+  border-top-color: #e2e8f0 !important;
+}
+
+body.theme-light .action-btn {
+  color: #0f172a !important;
+}
+
+body.theme-light .action-btn:hover {
+  background: #f1f5f9 !important;
+}
+
+body.theme-light .action-btn.danger:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+body.theme-light .pagination {
+  border-top-color: #e2e8f0 !important;
+}
+
+body.theme-light .page-btn {
+  border-color: #e2e8f0 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .page-btn:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .page-info {
+  color: #0f172a !important;
 }
 </style>
 

@@ -482,7 +482,7 @@ onMounted(() => {
 
 <style scoped>
 .order-create-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -500,12 +500,12 @@ onMounted(() => {
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .subtitle {
-  color: #999;
+  color: var(--muted);
   font-size: 16px;
 }
 
@@ -516,8 +516,8 @@ onMounted(() => {
 }
 
 .form-section {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
 }
@@ -525,7 +525,7 @@ onMounted(() => {
 .form-section h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 20px;
 }
 
@@ -537,32 +537,32 @@ onMounted(() => {
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .form-group input {
   width: 100%;
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--hover);
 }
 
 .loading-state,
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--muted);
 }
 
 .order-items {
@@ -573,8 +573,8 @@ onMounted(() => {
 }
 
 .order-item {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
 }
@@ -582,21 +582,21 @@ onMounted(() => {
 .item-info h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .item-quantity,
 .item-price {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   margin: 4px 0;
 }
 
 .item-price {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .order-total {
@@ -609,7 +609,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .total-row strong {
@@ -636,7 +636,7 @@ onMounted(() => {
 .btn-outline {
   background: transparent;
   border: 1px solid #3a3a3a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
@@ -671,8 +671,8 @@ onMounted(() => {
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -680,12 +680,12 @@ onMounted(() => {
 
 .address-option:hover {
   border-color: #3a3a3a;
-  background: #151515;
+  background: var(--hover);
 }
 
 .address-option.active {
-  border-color: #ffffff;
-  background: #1a1a1a;
+  border-color: var(--text);
+  background: var(--surface);
 }
 
 .radio-custom {
@@ -707,14 +707,14 @@ onMounted(() => {
   height: 20px;
   border: 2px solid #3a3a3a;
   border-radius: 50%;
-  background: #0f0f0f;
+  background: var(--bg);
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
 }
 
 .radio-custom input[type="radio"]:checked + .radio-label {
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #ffffff;
 }
 
@@ -727,7 +727,7 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #0a0a0a;
+  background: var(--bg);
 }
 
 .radio-custom input[type="radio"]:hover + .radio-label {
@@ -748,13 +748,13 @@ onMounted(() => {
 }
 
 .address-main strong {
-  color: #ffffff;
+  color: var(--text);
   font-size: 15px;
   font-weight: 600;
 }
 
 .address-phone {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -762,7 +762,7 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.5;
 }

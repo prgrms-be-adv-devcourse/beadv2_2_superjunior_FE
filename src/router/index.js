@@ -82,7 +82,13 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { left: 0, top: 0 }
+  }
 })
 
 // 인증 가드: meta.requiresAuth가 true인 라우트는 프로필 확인

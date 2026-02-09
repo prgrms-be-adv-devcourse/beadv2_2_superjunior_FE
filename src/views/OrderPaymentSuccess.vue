@@ -97,7 +97,13 @@ const clearOrderStatusPolling = () => {
 }
 
 onMounted(async () => {
-  const orderId = route.query.orderId || sessionStorage.getItem(pendingOrderKey) || ''
+  // route.query.orderId가 배열이거나 중복된 경우 첫 번째 값만 사용
+  let orderId = route.query.orderId || sessionStorage.getItem(pendingOrderKey) || ''
+  if (Array.isArray(orderId)) {
+    orderId = orderId[0]
+  } else if (typeof orderId === 'string' && orderId.includes(',')) {
+    orderId = orderId.split(',')[0].trim()
+  }
   const paymentKey = route.query.paymentKey || ''
   const amount = Number(route.query.amount || 0)
 

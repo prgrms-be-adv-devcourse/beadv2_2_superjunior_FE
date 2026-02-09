@@ -264,7 +264,7 @@ watch(
 /* 기존 스타일 그대로 사용 + 설명 아래 여백만 살짝 추가 */
 
 .product-detail-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -327,7 +327,7 @@ watch(
 }
 
 .thumbnail.active {
-  border-color: #ffffff;
+  border-color: var(--text);
   opacity: 1;
 }
 
@@ -339,7 +339,7 @@ watch(
 
 .info {
   background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 32px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
@@ -362,7 +362,7 @@ watch(
 
 .stock-inline {
   font-weight: 400;
-  color: #999;
+  color: var(--muted);
   margin-left: 8px;
   font-size: 16px;
 }
@@ -372,7 +372,7 @@ watch(
 }
 
 .product-title {
-  color: #ffffff;
+  color: var(--text);
   font-size: 32px;
   font-weight: 700;
   margin: 16px 0 20px;
@@ -384,7 +384,7 @@ watch(
   margin: 0;
   font-size: 26px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -397,7 +397,7 @@ watch(
 }
 
 .info h1 {
-  color: #ffffff;
+  color: var(--text);
   font-size: 28px;
   font-weight: 700;
   margin: 12px 0;
@@ -417,7 +417,7 @@ watch(
 }
 
 .subtitle {
-  color: #999;
+  color: var(--muted);
   margin-top: 8px;
 }
 
@@ -431,7 +431,7 @@ watch(
 .current-price {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .specs {
@@ -447,14 +447,14 @@ watch(
   color: #e0e0e0;
   font-size: 15px;
   padding: 10px 14px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 10px;
   border-left: 3px solid #ffffff;
   transition: all 0.2s ease;
 }
 
 .specs li:hover {
-  background: #1a1a1a;
+  background: var(--surface);
   transform: translateX(4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -481,12 +481,12 @@ watch(
 .btn-outline {
   background: transparent;
   border: 2px solid #3a3a3a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
   background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-  border-color: #ffffff;
+  border-color: var(--text);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
 }
@@ -505,7 +505,7 @@ watch(
 
 .shipping {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
 }
 
 .content {
@@ -515,8 +515,8 @@ watch(
 }
 
 .panel {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
@@ -524,7 +524,7 @@ watch(
 
 .panel h2 {
   margin-bottom: 12px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .description-panel {
@@ -548,7 +548,7 @@ watch(
 .detailed-description h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 24px 0 12px;
 }
 
@@ -582,36 +582,36 @@ watch(
   align-items: center;
   padding: 12px;
   border-radius: 12px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
 }
 
 .notice-list .title {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .notice-list .date {
-  color: #999;
+  color: var(--muted);
 }
 
 .notice-list .tag {
   background: #2a2a2a;
-  color: #ffffff;
+  color: var(--text);
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
 }
 
 details {
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 12px;
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 details summary {
-  color: #ffffff;
+  color: var(--text);
   cursor: pointer;
   font-weight: 600;
 }
@@ -624,7 +624,7 @@ details p {
 .not-found {
   text-align: center;
   padding: 100px 20px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 body.theme-light .product-detail-page,
@@ -697,7 +697,7 @@ body.theme-light .btn-outline:hover {
 
 body.theme-light .btn-primary {
   background: #111111;
-  color: #ffffff;
+  color: var(--text);
 }
 
 body.theme-light .btn-primary:hover {
@@ -733,7 +733,7 @@ body.theme-light .thumbnail-list {
 }
 
 .not-found p {
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 20px;
 }
 

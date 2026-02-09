@@ -3,7 +3,7 @@
     <div class="container">
       <div class="brand" @click="router.push('/')">
         <img src="/favicon-design2.svg" alt="0909 공구공구" class="brand-icon" />
-        <span class="brand-text">0909 공구공구</span>
+        <span class="brand-text">0909</span>
       </div>
       <nav class="nav">
         <router-link class="nav-link" to="/">홈</router-link>
@@ -14,20 +14,59 @@
         <button class="icon-btn theme-btn" @click="toggleTheme" :aria-label="theme === 'dark' ? '라이트 모드' : '다크 모드'">
           <span class="icon">{{ theme === 'dark' ? '🌙' : '☀️' }}</span>
         </button>
-        <button class="icon-btn cart-btn" @click="goToCart">
+        <!-- <button class="icon-btn cart-btn" @click="goToCart" aria-label="장바구니">
           <span class="icon">🛒</span>
           <span v-if="cartCount > 0" class="badge">{{ cartCount }}</span>
-        </button>
-        <button class="icon-btn" @click="goToNotifications">
-          <span class="icon">🔔</span>
+        </button> -->
+        <button class="icon-btn" @click="goToNotifications" aria-label="알림">
+          <span class="icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M13.73 21a2 2 0 0 1-3.46 0"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
           <span v-if="notificationCount > 0" class="badge">{{ notificationCount }}</span>
         </button>
-        <router-link v-if="!isLoggedIn" class="btn btn-outline" to="/login">로그인</router-link>
-        <router-link v-if="!isLoggedIn" class="btn btn-primary" to="/register">회원가입</router-link>
-        <div v-if="isLoggedIn" class="user-menu">
-          <button class="btn btn-outline" @click="goToMyPage">마이페이지</button>
-          <button class="btn btn-outline" @click="handleLogout">로그아웃</button>
-        </div>
+        <button
+          v-if="isLoggedIn"
+          class="icon-btn"
+          @click="goToMyPage"
+          aria-label="마이페이지"
+        >
+          <span class="icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <circle
+                cx="12"
+                cy="7"
+                r="4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+        </button>
+        <router-link v-if="!isLoggedIn" class="btn btn-primary" to="/login">로그인/회원가입</router-link>
       </div>
     </div>
   </header>
@@ -36,29 +75,30 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { notificationApi, cartApi } from '@/api/axios'
+import { notificationApi } from '@/api/axios'
+// import { cartApi } from '@/api/axios'
 import { authAPI } from '@/api/auth'
 
 const router = useRouter()
 
 const isLoggedIn = ref(false)
-const cartCount = ref(0)
+// const cartCount = ref(0)
 const notificationCount = ref(0)
 const theme = ref('dark')
 let authCheckInterval = null
 let notificationCheckInterval = null
-let cartCountInterval = null
+// let cartCountInterval = null
 
 const checkAuthStatus = async () => {
   const memberId = localStorage.getItem('member_id')
   const wasLoggedIn = isLoggedIn.value
   isLoggedIn.value = !!memberId
   if (!memberId) {
-    cartCount.value = 0
+    // cartCount.value = 0
     notificationCount.value = 0
   } else if (!wasLoggedIn) {
     // 로그인 상태로 변경된 경우 장바구니와 알림 개수 로드
-    await loadCartCount()
+    // await loadCartCount()
     loadNotificationCount()
   }
 }
@@ -107,24 +147,24 @@ const loadNotificationCount = async () => {
   }
 }
 
-const loadCartCount = async () => {
-  const memberId = localStorage.getItem('member_id')
-  if (!memberId) {
-    cartCount.value = 0
-    return
-  }
+// const loadCartCount = async () => {
+//   const memberId = localStorage.getItem('member_id')
+//   if (!memberId) {
+//     cartCount.value = 0
+//     return
+//   }
 
-  try {
-    const response = await cartApi.getCart(0, 100)
-    const pageResponse = response.data?.data || response.data
-    const cartData = pageResponse?.content || []
-    // 장바구니 항목의 총 수량 계산
-    cartCount.value = cartData.reduce((sum, item) => sum + (item.quantity || 0), 0)
-  } catch (error) {
-    console.error('장바구니 개수 조회 실패:', error)
-    cartCount.value = 0
-  }
-}
+//   try {
+//     const response = await cartApi.getCart(0, 100)
+//     const pageResponse = response.data?.data || response.data
+//     const cartData = pageResponse?.content || []
+//     // 장바구니 항목의 총 수량 계산
+//     cartCount.value = cartData.reduce((sum, item) => sum + (item.quantity || 0), 0)
+//   } catch (error) {
+//     console.error('장바구니 개수 조회 실패:', error)
+//     cartCount.value = 0
+//   }
+// }
 
 const applyTheme = (value) => {
   theme.value = value
@@ -137,14 +177,14 @@ const toggleTheme = () => {
   applyTheme(theme.value === 'dark' ? 'light' : 'dark')
 }
 
-const handleCartUpdated = () => {
-  loadCartCount()
-}
+// const handleCartUpdated = () => {
+//   loadCartCount()
+// }
 
 
-const goToCart = () => {
-  router.push('/cart')
-}
+// const goToCart = () => {
+//   router.push('/cart')
+// }
 
 const goToNotifications = () => {
   router.push('/me/notifications')
@@ -186,26 +226,6 @@ const handleFocus = () => {
   }
 }
 
-const handleLogout = async () => {
-  if (confirm('로그아웃 하시겠습니까?')) {
-    try {
-      await authAPI.logout()
-    } catch (error) {
-      console.warn('로그아웃 요청 실패:', error)
-    }
-    localStorage.removeItem('user_role')
-    localStorage.removeItem('user_email')
-    localStorage.removeItem('user_data')
-    localStorage.removeItem('user_profile')
-    localStorage.removeItem('member_id')
-    localStorage.removeItem('user_name')
-    isLoggedIn.value = false
-    cartCount.value = 0
-    notificationCount.value = 0
-    router.push('/')
-  }
-}
-
 onMounted(() => {
   const savedTheme = localStorage.getItem('theme')
   applyTheme(savedTheme === 'light' ? 'light' : 'dark')
@@ -227,7 +247,7 @@ onMounted(() => {
 
   
   // 장바구니 업데이트 이벤트 리스너
-  window.addEventListener('cart-updated', handleCartUpdated)
+  // window.addEventListener('cart-updated', handleCartUpdated)
   
   // 같은 탭에서의 변경 감지를 위한 주기적 체크
   authCheckInterval = setInterval(() => {
@@ -261,7 +281,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)
   window.removeEventListener('auth-changed', handleAuthChanged)
   window.removeEventListener('notification-changed', handleNotificationChanged)
-  window.removeEventListener('cart-updated', handleCartUpdated)
+  // window.removeEventListener('cart-updated', handleCartUpdated)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   window.removeEventListener('focus', handleFocus)
   if (authCheckInterval) {
@@ -270,9 +290,9 @@ onBeforeUnmount(() => {
   if (notificationCheckInterval) {
     clearInterval(notificationCheckInterval)
   }
-  if (cartCountInterval) {
-    clearInterval(cartCountInterval)
-  }
+  // if (cartCountInterval) {
+  //   clearInterval(cartCountInterval)
+  // }
 })
 </script>
 
@@ -384,6 +404,15 @@ onBeforeUnmount(() => {
 
 .icon {
   font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
 }
 
 .badge {
@@ -437,6 +466,11 @@ onBeforeUnmount(() => {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   background: var(--btn-primary-hover);
+}
+
+/* 라이트 모드: 버튼에 얇은 테두리 */
+:global(body.theme-light) .btn-primary {
+  border: 1px solid var(--border);
 }
 
 .user-menu {

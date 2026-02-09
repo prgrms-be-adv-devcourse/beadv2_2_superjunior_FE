@@ -102,7 +102,7 @@ const handleSubmit = async () => {
 
 <style scoped>
 .address-register-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 40px 20px;
 }
@@ -113,7 +113,7 @@ const handleSubmit = async () => {
 }
 
 h1 {
-  color: #ffffff;
+  color: var(--text);
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 32px;
@@ -139,21 +139,21 @@ h1 {
 
 .form-group input {
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
 }
 
 .form-group input::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 

@@ -252,13 +252,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api, { groupPurchaseApi, productApi } from '@/api/axios'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 
 const router = useRouter()
+const route = useRoute()
 
 // 오늘 날짜를 Date 객체로 반환
 const getTodayDate = () => {
@@ -316,9 +317,39 @@ const selectedProduct = computed(() => {
   return products.value.find(p => p.productId === form.value.productId)
 })
 
+const getReturnPath = () => {
+  const from = route.query.from
+  if (typeof from !== 'string') return null
+  const rawPath = decodeURIComponent(from)
+  if (rawPath.startsWith('/')) {
+    return rawPath
+  }
+  return null
+}
+
+const goBackOrFallback = () => {
+  const returnPath = getReturnPath()
+  if (returnPath) {
+    router.push(returnPath)
+    return
+  }
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
+  router.push('/seller')
+}
+
+const handlePopState = () => {
+  const returnPath = getReturnPath()
+  if (returnPath) {
+    router.replace(returnPath)
+  }
+}
+
 const handleCancel = () => {
   if (confirm('작성 중인 내용이 사라집니다. 정말 취소하시겠습니까?')) {
-    router.push('/seller')
+    goBackOrFallback()
   }
 }
 
@@ -594,6 +625,7 @@ const fetchProducts = async () => {
 }
 
 onMounted(() => {
+  window.addEventListener('popstate', handlePopState)
   // 로그인 체크
   const memberId = localStorage.getItem('member_id')
   if (!memberId) {
@@ -614,6 +646,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('popstate', handlePopState)
   pendingImages.value.forEach(item => URL.revokeObjectURL(item.localUrl))
   pendingImages.value = []
   editor?.value?.destroy()
@@ -622,7 +655,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .group-purchase-create-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -640,12 +673,12 @@ onBeforeUnmount(() => {
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .page-header p {
-  color: #999;
+  color: var(--muted);
   font-size: 15px;
 }
 
@@ -656,8 +689,8 @@ onBeforeUnmount(() => {
 }
 
 .form-section {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -668,7 +701,7 @@ onBeforeUnmount(() => {
 .form-section h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
@@ -694,11 +727,11 @@ onBeforeUnmount(() => {
 .form-group select,
 .form-group textarea {
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
 }
 
@@ -712,9 +745,9 @@ onBeforeUnmount(() => {
   min-height: 220px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 2px solid #2a2a2a;
-  background: #0f0f0f;
-  color: #ffffff;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
   line-height: 1.8;
   overflow-y: auto;
 }
@@ -753,14 +786,14 @@ onBeforeUnmount(() => {
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
@@ -776,11 +809,11 @@ onBeforeUnmount(() => {
 
 .time-period-select {
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   cursor: pointer;
   min-width: 80px;
@@ -788,37 +821,37 @@ onBeforeUnmount(() => {
 
 .time-period-select:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
 .time-input {
   flex: 1;
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   cursor: pointer;
 }
 
 .time-input:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
 .form-hint {
   font-size: 12px;
-  color: #666;
+  color: var(--muted);
   margin-top: 4px;
 }
 
 .selected-product-info {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -834,13 +867,13 @@ onBeforeUnmount(() => {
 
 .info-label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .info-value {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -857,9 +890,9 @@ onBeforeUnmount(() => {
 
 .discount-info {
   padding: 12px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   display: flex;
   gap: 16px;
@@ -889,8 +922,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px;
 }
@@ -904,7 +937,7 @@ onBeforeUnmount(() => {
 
 .upload-status {
   margin-top: 12px;
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -927,11 +960,11 @@ onBeforeUnmount(() => {
 .btn-outline {
   background: transparent;
   border: 1px solid #3a3a3a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
-  background: #2a2a2a;
+  background: var(--hover);
   border-color: #4a4a4a;
 }
 
@@ -964,6 +997,126 @@ onBeforeUnmount(() => {
   .btn {
     width: 100%;
   }
+}
+
+/* 라이트 모드 스타일 */
+body.theme-light .group-purchase-create-page {
+  background: #ffffff !important;
+}
+
+body.theme-light .page-header h1 {
+  color: #0f172a !important;
+}
+
+body.theme-light .page-header p {
+  color: #666666 !important;
+}
+
+body.theme-light .form-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .form-section h3 {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group label {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input,
+body.theme-light .form-group select,
+body.theme-light .form-group textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input:focus,
+body.theme-light .form-group select:focus,
+body.theme-light .form-group textarea:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .form-group input::placeholder,
+body.theme-light .form-group textarea::placeholder {
+  color: #999999 !important;
+}
+
+body.theme-light .tiptap-editor {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .tiptap-editor:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .time-period-select,
+body.theme-light .time-input {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .time-period-select:focus,
+body.theme-light .time-input:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0) !important;
+}
+
+body.theme-light .form-hint {
+  color: #666666 !important;
+}
+
+body.theme-light .selected-product-info {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .info-label {
+  color: #666666 !important;
+}
+
+body.theme-light .info-value {
+  color: #0f172a !important;
+}
+
+body.theme-light .image-preview-item {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .upload-status {
+  color: #666666 !important;
+}
+
+body.theme-light .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+body.theme-light .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
 }
 </style>
 

@@ -109,23 +109,25 @@ watch(() => props.modelValue, (newValue) => {
 .postal-code-input {
   width: 150px;
   padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   cursor: not-allowed;
+  font-family: inherit;
 }
 
 .address-input,
 .address-detail-input {
   padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
+  font-family: inherit;
 }
 
 .address-input {
@@ -134,8 +136,22 @@ watch(() => props.modelValue, (newValue) => {
 
 .address-detail-input:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--hover);
+}
+
+/* 라이트 모드 스타일 */
+:global(body.theme-light) .postal-code-input,
+:global(body.theme-light) .address-input,
+:global(body.theme-light) .address-detail-input {
+  background: #ffffff;
+  border-color: #d0d0d6;
+  color: #0f172a;
+}
+
+:global(body.theme-light) .address-detail-input:focus {
+  border-color: #0f172a;
+  background: #ffffff;
 }
 
 .address-input::placeholder,
@@ -144,11 +160,18 @@ watch(() => props.modelValue, (newValue) => {
   color: #666;
 }
 
+/* 라이트 모드 placeholder */
+:global(body.theme-light) .address-input::placeholder,
+:global(body.theme-light) .address-detail-input::placeholder,
+:global(body.theme-light) .postal-code-input::placeholder {
+  color: #94a3b8;
+}
+
 .search-btn {
   padding: 12px 20px;
-  background: #ffffff;
-  color: #0a0a0a;
-  border: none;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
@@ -158,7 +181,18 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .search-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  background: var(--hover);
+  border-color: var(--muted);
+}
+
+/* 라이트 모드 스타일 */
+:global(body.theme-light) .search-btn {
+  border-color: #d0d0d6;
+  color: #0f172a;
+}
+
+:global(body.theme-light) .search-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 </style>

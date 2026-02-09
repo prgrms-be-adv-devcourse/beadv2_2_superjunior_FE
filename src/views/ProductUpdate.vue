@@ -65,6 +65,35 @@
         </div>
 
         <div class="form-section">
+          <h3>상품 이미지</h3>
+          <div class="form-group">
+            <label for="productImage">상품 이미지</label>
+            <input
+              id="productImage"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              @change="handleImageChange"
+            />
+            <p class="form-hint">jpg, png, webp / 최대 10MB</p>
+            <p v-if="imageError" class="form-error">{{ imageError }}</p>
+          </div>
+          <div v-if="imagePreviewUrl" class="image-preview">
+            <img :src="imagePreviewUrl" alt="상품 이미지 미리보기" />
+            <button type="button" class="btn btn-outline btn-sm" @click="clearImage">
+              이미지 제거
+            </button>
+          </div>
+          <div v-if="form.imageUrl && !imagePreviewUrl" class="current-image">
+            <p class="form-hint">현재 이미지:</p>
+            <img :src="form.imageUrl" alt="현재 상품 이미지" class="current-image-preview" />
+          </div>
+          <p v-if="form.imageUrl && !imageUploading && !imagePreviewUrl" class="upload-status success">
+            기존 이미지 사용 중
+          </p>
+          <p v-if="imageUploading" class="upload-status">이미지 업로드 중...</p>
+        </div>
+
+        <div class="form-section">
           <h3>상품 원본 링크</h3>
           <div class="form-group">
             <label for="originalUrl">상품 원본 URL *</label>
@@ -106,7 +135,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { productApi } from '@/api/axios'
+import axios from 'axios'
+import api, { productApi } from '@/api/axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -118,10 +148,15 @@ const form = ref({
   currentPrice: null,
   stock: null,
   originalUrl: '',
-  description: ''
+  description: '',
+  imageUrl: ''
 })
 
 const loading = ref(false)
+const selectedImageFile = ref(null)
+const imagePreviewUrl = ref('')
+const imageUploading = ref(false)
+const imageError = ref('')
 
 const isFormValid = computed(() => {
   return (
@@ -140,6 +175,79 @@ const handleCancel = () => {
   }
 }
 
+const handleImageChange = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    imageError.value = 'jpg, png, webp 형식만 업로드할 수 있습니다.'
+    event.target.value = ''
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    imageError.value = '이미지 크기는 10MB를 초과할 수 없습니다.'
+    event.target.value = ''
+    return
+  }
+
+  imageError.value = ''
+  selectedImageFile.value = file
+  imagePreviewUrl.value = URL.createObjectURL(file)
+
+  try {
+    await uploadProductImage()
+  } catch (error) {
+    console.error('이미지 업로드 실패:', error)
+    imageError.value = '이미지 업로드에 실패했습니다. 다시 시도해주세요.'
+  }
+}
+
+const clearImage = () => {
+  selectedImageFile.value = null
+  if (imagePreviewUrl.value) {
+    URL.revokeObjectURL(imagePreviewUrl.value)
+  }
+  imagePreviewUrl.value = ''
+  form.value.imageUrl = ''
+  imageError.value = ''
+}
+
+const requestPresignedUrl = async (file) => {
+  const response = await api.post('/products/images/presigned-url', {
+    fileName: file.name,
+    contentType: file.type
+  })
+  const data = response?.data?.data || response?.data || {}
+  return {
+    presignedUrl: data.presignedUrl,
+    imageUrl: data.imageUrl
+  }
+}
+
+const uploadToS3 = async (file, presignedUrl) => {
+  await axios.put(presignedUrl, file, {
+    headers: {
+      'Content-Type': file.type
+    }
+  })
+}
+
+const uploadProductImage = async () => {
+  if (!selectedImageFile.value) return
+  imageUploading.value = true
+  try {
+    const { presignedUrl, imageUrl } = await requestPresignedUrl(selectedImageFile.value)
+    if (!presignedUrl || !imageUrl) {
+      throw new Error('Presigned URL 발급에 실패했습니다.')
+    }
+    await uploadToS3(selectedImageFile.value, presignedUrl)
+    form.value.imageUrl = imageUrl
+  } finally {
+    imageUploading.value = false
+  }
+}
+
 const handleSubmit = async () => {
   if (!isFormValid.value) {
     alert('모든 필수 항목을 입력해주세요.')
@@ -155,6 +263,11 @@ const handleSubmit = async () => {
       description: form.value.description,
       stock: form.value.stock,
       originalLink: form.value.originalUrl
+    }
+
+    // 이미지가 업로드된 경우에만 imageUrl 추가
+    if (form.value.imageUrl) {
+      requestData.imageUrl = form.value.imageUrl
     }
 
     const response = await productApi.updateProduct(productId, requestData)
@@ -181,7 +294,8 @@ onMounted(async () => {
       currentPrice: product.price ?? null,
       stock: product.stock ?? null,
       originalUrl: product.originalUrl || product.originalLink || '',
-      description: product.description || ''
+      description: product.description || '',
+      imageUrl: product.imageUrl || product.image || ''
     }
   } catch (error) {
     console.error('상품 정보 불러오기 실패:', error)
@@ -403,6 +517,61 @@ onMounted(async () => {
     cursor: not-allowed;
   }
   
+  .form-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: -4px;
+  }
+
+  .form-error {
+    font-size: 12px;
+    color: #ff6b6b;
+    margin-top: -4px;
+  }
+
+  .image-preview {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .image-preview img {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 12px;
+    border: 2px solid #2a2a2a;
+  }
+
+  .current-image {
+    margin-top: 16px;
+  }
+
+  .current-image-preview {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 12px;
+    border: 2px solid #2a2a2a;
+    margin-top: 8px;
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .upload-status {
+    font-size: 13px;
+    color: #999;
+    margin-top: 8px;
+  }
+
+  .upload-status.success {
+    color: #51cf66;
+  }
+
   @media (max-width: 640px) {
     .form-row {
       grid-template-columns: 1fr;
@@ -415,6 +584,93 @@ onMounted(async () => {
     .btn {
       width: 100%;
     }
+  }
+
+  /* 라이트 모드 스타일 */
+  body.theme-light .update-page {
+    background: #ffffff !important;
+  }
+
+  body.theme-light .page-header h1 {
+    color: #0f172a !important;
+  }
+
+  body.theme-light .page-header p {
+    color: #666666 !important;
+  }
+
+  body.theme-light .form-section {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  body.theme-light .form-section h3 {
+    color: #0f172a !important;
+  }
+
+  body.theme-light .form-group label {
+    color: #0f172a !important;
+  }
+
+  body.theme-light .form-group input,
+  body.theme-light .form-group select,
+  body.theme-light .form-group textarea {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+
+  body.theme-light .form-group input:focus,
+  body.theme-light .form-group select:focus,
+  body.theme-light .form-group textarea:focus {
+    border-color: #0f172a !important;
+    background: #ffffff !important;
+  }
+
+  body.theme-light .form-group input::placeholder,
+  body.theme-light .form-group textarea::placeholder {
+    color: #999999 !important;
+  }
+
+  body.theme-light .form-hint {
+    color: #666666 !important;
+  }
+
+  body.theme-light .form-error {
+    color: #ff6b6b !important;
+  }
+
+  body.theme-light .image-preview img,
+  body.theme-light .current-image-preview {
+    border-color: #e2e8f0 !important;
+  }
+
+  body.theme-light .upload-status {
+    color: #666666 !important;
+  }
+
+  body.theme-light .upload-status.success {
+    color: #51cf66 !important;
+  }
+
+  body.theme-light .btn-outline {
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+
+  body.theme-light .btn-outline:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  body.theme-light .btn-primary {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+
+  body.theme-light .btn-primary:hover:not(:disabled) {
+    background: #1e293b !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
   }
   </style>
   

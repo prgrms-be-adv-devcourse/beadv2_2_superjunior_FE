@@ -130,13 +130,13 @@
             >
               {{ participateLoading ? '처리 중...' : getParticipateButtonText }}
             </button>
-            <button
+            <!-- <button
               class="btn btn-outline cart-btn"
               :disabled="!canParticipate || participateLoading"
               @click="addToCartFromDetail"
             >
               장바구니 담기
-            </button>
+            </button> -->
             <p v-if="groupPurchase.status !== 'OPEN'" class="status-message">
               {{ getStatusMessage }}
             </p>
@@ -155,7 +155,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
-import { groupPurchaseApi, cartApi } from '@/api/axios'
+import { groupPurchaseApi } from '@/api/axios'
 
 // eslint-disable-next-line no-undef
 const props = defineProps({
@@ -383,41 +383,41 @@ const handleParticipate = () => {
 }
 
 // 장바구니 담기 (공동구매 상세, 선택 수량)
-const addToCartFromDetail = async () => {
-  if (!canParticipate.value) {
-    alert('참여 가능 상태를 확인해주세요.')
-    return
-  }
+// const addToCartFromDetail = async () => {
+//   if (!canParticipate.value) {
+//     alert('참여 가능 상태를 확인해주세요.')
+//     return
+//   }
 
-  if (!groupPurchaseIdForOrder.value) {
-    alert('공동구매 정보를 불러오지 못했습니다.')
-    return
-  }
+//   if (!groupPurchaseIdForOrder.value) {
+//     alert('공동구매 정보를 불러오지 못했습니다.')
+//     return
+//   }
 
-  try {
-    const response = await cartApi.addToCart({
-      groupPurchaseId: groupPurchaseIdForOrder.value,
-      quantity: participateQuantity.value || 1
-    })
-    // ResponseDto<CartInfo> 구조에서 data 추출
-    const cartInfo = response.data?.data || response.data
-    console.log('장바구니 추가 성공:', {
-      cartId: cartInfo?.cartId,
-      memberId: cartInfo?.memberId,
-      groupPurchaseId: cartInfo?.groupPurchaseId,
-      quantity: cartInfo?.quantity,
-      createdAt: cartInfo?.createdAt,
-      updatedAt: cartInfo?.updatedAt
-    })
-    alert('장바구니에 담았습니다.')
-    // FloatingCart 업데이트 이벤트 발생
-    window.dispatchEvent(new CustomEvent('cart-updated'))
-  } catch (error) {
-    console.error('장바구니 담기 실패:', error)
-    const errorMessage = error.response?.data?.message || '장바구니 담기에 실패했습니다.'
-    alert(errorMessage)
-  }
-}
+//   try {
+//     const response = await cartApi.addToCart({
+//       groupPurchaseId: groupPurchaseIdForOrder.value,
+//       quantity: participateQuantity.value || 1
+//     })
+//     // ResponseDto<CartInfo> 구조에서 data 추출
+//     const cartInfo = response.data?.data || response.data
+//     console.log('장바구니 추가 성공:', {
+//       cartId: cartInfo?.cartId,
+//       memberId: cartInfo?.memberId,
+//       groupPurchaseId: cartInfo?.groupPurchaseId,
+//       quantity: cartInfo?.quantity,
+//       createdAt: cartInfo?.createdAt,
+//       updatedAt: cartInfo?.updatedAt
+//     })
+//     alert('장바구니에 담았습니다.')
+//     // FloatingCart 업데이트 이벤트 발생
+//     window.dispatchEvent(new CustomEvent('cart-updated'))
+//   } catch (error) {
+//     console.error('장바구니 담기 실패:', error)
+//     const errorMessage = error.response?.data?.message || '장바구니 담기에 실패했습니다.'
+//     alert(errorMessage)
+//   }
+// }
 
 const handleDelete = async () => {
   if (confirm('정말 이 공동구매를 삭제하시겠습니까?')) {
@@ -447,7 +447,7 @@ watch(() => props.id, () => {
 
 <style scoped>
 .group-purchase-detail-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -504,7 +504,7 @@ body.theme-light .status-badge.scheduled {
 
 .created-date {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -526,7 +526,7 @@ body.theme-light .status-badge.scheduled {
   margin: 0 auto 32px;
   border-radius: 16px;
   overflow: hidden;
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 .product-image-section img {
@@ -539,7 +539,7 @@ body.theme-light .status-badge.scheduled {
 .main-info h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 16px;
 }
 
@@ -590,14 +590,14 @@ body.theme-light .status-badge.scheduled {
 .description-title {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 12px;
   text-align: center;
 }
 
 .description {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
@@ -606,7 +606,7 @@ body.theme-light .status-badge.scheduled {
 .description p {
   font-size: 16px;
   line-height: 2.4;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
 .description div,
@@ -645,6 +645,18 @@ body.theme-light .participate-total {
   color: #111111;
 }
 
+body.theme-light .progress-bar {
+  background: #e6e6ea;
+}
+
+body.theme-light .progress-fill {
+  background: #111111;
+}
+
+body.theme-light .progress-text {
+  color: #666666;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -652,8 +664,8 @@ body.theme-light .participate-total {
 }
 
 .info-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
 }
@@ -661,7 +673,7 @@ body.theme-light .participate-total {
 .info-card h3 {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 16px;
 }
 
@@ -675,12 +687,12 @@ body.theme-light .participate-total {
 .discount-price {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .original-price {
   font-size: 16px;
-  color: #666;
+  color: var(--muted);
   text-decoration: line-through;
 }
 
@@ -701,17 +713,17 @@ body.theme-light .participate-total {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
 .quantity-row strong {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
 }
 
 .progress-bar {
   height: 10px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -726,7 +738,7 @@ body.theme-light .participate-total {
 
 .progress-text {
   font-size: 12px;
-  color: #999;
+  color: var(--muted);
   text-align: right;
 }
 
@@ -740,7 +752,7 @@ body.theme-light .participate-total {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
 .time-remaining {
@@ -767,16 +779,16 @@ body.theme-light .participate-total {
 .participate-input label {
   font-size: 14px;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
 .participate-input input {
   padding: 14px 16px;
-  background: #0a0a0a;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 16px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
 }
 
@@ -790,18 +802,18 @@ body.theme-light .participate-total {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: #0a0a0a;
+  background: var(--bg);
   border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .participate-total span {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .participate-total strong {
-  color: #ffffff;
+  color: var(--text);
   font-size: 20px;
   font-weight: 700;
 }
@@ -814,7 +826,7 @@ body.theme-light .participate-total {
   color: #0a0a0a;
   font-size: 16px;
   font-weight: 700;
-  border: none;
+  border: 1px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -822,13 +834,23 @@ body.theme-light .participate-total {
 
 .btn-participate:hover:not(:disabled) {
   background: #69db7c;
+  border-color: var(--text);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(81, 207, 102, 0.3);
 }
 
+/* 라이트 모드: 참여하기 버튼 테두리 */
+:global(body.theme-light) .btn-participate {
+  border-color: #51cf66;
+}
+
+:global(body.theme-light) .btn-participate:hover:not(:disabled) {
+  border-color: #69db7c;
+}
+
 .btn-participate:disabled {
   background: #2a2a2a;
-  color: #666;
+  color: var(--muted);
   cursor: not-allowed;
 }
 
@@ -840,13 +862,13 @@ body.theme-light .participate-total {
 .status-message {
   margin-top: 12px;
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   text-align: center;
 }
 
 .product-image-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   overflow: hidden;
@@ -859,8 +881,8 @@ body.theme-light .participate-total {
 }
 
 .participants-section {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
 }
@@ -868,7 +890,7 @@ body.theme-light .participate-total {
 .participants-section h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 16px;
 }
 
@@ -882,10 +904,10 @@ body.theme-light .participate-total {
   display: flex;
   justify-content: space-between;
   padding: 12px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 8px;
   font-size: 14px;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
 .btn {
@@ -901,7 +923,7 @@ body.theme-light .participate-total {
 .btn-outline {
   background: transparent;
   border: 1px solid #3a3a3a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
@@ -911,7 +933,7 @@ body.theme-light .participate-total {
 
 .btn-danger {
   background: #fa5252;
-  color: #ffffff;
+  color: var(--text);
   border: none;
 }
 
@@ -933,13 +955,13 @@ body.theme-light .participate-total {
 .not-found {
   text-align: center;
   padding: 100px 20px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .loading-container {
   text-align: center;
   padding: 100px 20px;
-  color: #ffffff;
+  color: var(--text);
   font-size: 18px;
 }
 

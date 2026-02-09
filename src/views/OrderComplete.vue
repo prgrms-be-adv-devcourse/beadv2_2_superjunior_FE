@@ -29,7 +29,7 @@ onMounted(() => {
 
 <style scoped>
 .order-complete-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -43,8 +43,8 @@ onMounted(() => {
 }
 
 .complete-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 48px 40px;
   text-align: center;
@@ -74,12 +74,12 @@ onMounted(() => {
 h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 12px;
 }
 
 .message {
-  color: #999;
+  color: var(--muted);
   font-size: 16px;
   margin-bottom: 32px;
 }
@@ -116,11 +116,11 @@ h1 {
 .btn-outline {
   background: transparent;
   border: 1px solid #3a3a3a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
-  background: #2a2a2a;
+  background: var(--hover);
   border-color: #4a4a4a;
 }
 

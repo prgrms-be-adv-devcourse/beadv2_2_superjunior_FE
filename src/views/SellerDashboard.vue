@@ -159,7 +159,7 @@
 
             <div class="header-actions">
               <router-link
-                to="/seller/register/product-register"
+                :to="{ path: '/seller/register/product-register', query: { from: route.fullPath } }"
                 class="btn-new-product"
               >
                 + 상품 등록
@@ -197,7 +197,7 @@
               <div v-if="sellerProducts.length === 0" class="empty-state">
                 <p>등록된 상품이 없습니다</p>
                 <router-link
-                  to="/seller/register/product-register"
+                  :to="{ path: '/seller/register/product-register', query: { from: route.fullPath } }"
                   class="btn btn-primary"
                 >
                   상품 등록하기
@@ -267,7 +267,10 @@
             </div>
 
             <div class="header-actions">
-              <router-link to="/group-purchases/create" class="btn-new-product">
+              <router-link
+                :to="{ path: '/group-purchases/create', query: { from: route.fullPath } }"
+                class="btn-new-product"
+              >
                 + 공동구매 등록
               </router-link>
               <router-link to="/group-purchases" class="link">
@@ -308,7 +311,12 @@
               </div>
               <div v-if="sellerGroupPurchases.length === 0" class="empty-state">
                 <p>진행 중인 공동구매가 없습니다</p>
-                <router-link to="/group-purchases/create" class="btn btn-primary">공동구매 등록하기</router-link>
+                <router-link
+                  :to="{ path: '/group-purchases/create', query: { from: route.fullPath } }"
+                  class="btn btn-primary"
+                >
+                  공동구매 등록하기
+                </router-link>
               </div>
             </template>
           </div>
@@ -532,13 +540,14 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
 import { authAPI } from '@/api/auth'
 import { sellerBalanceApi, productApi } from '@/api/axios'
 import { formatDateTime } from '@/utils/timeFormatter'
 
 const router = useRouter()
+const route = useRoute()
 
 const seller = ref({ ...sellerProfile })
 const sellerProducts = ref([])
@@ -1291,7 +1300,7 @@ onMounted(() => {
 
 <style scoped>
 .seller-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -1309,7 +1318,7 @@ onMounted(() => {
 
 .seller-hero {
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-  border: 1px solid #3a3a3a;
+  border: 2px solid #2a2a2a;
   border-radius: 24px;
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -1338,7 +1347,7 @@ onMounted(() => {
 }
 
 .eyebrow {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1349,7 +1358,7 @@ onMounted(() => {
 .seller-hero h1 {
   font-size: 36px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0 0 12px;
 }
 
@@ -1369,11 +1378,11 @@ onMounted(() => {
 
 .badge {
   background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid #2a2a2a;
   border-radius: 20px;
   padding: 6px 14px;
   font-size: 13px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -1402,7 +1411,7 @@ onMounted(() => {
   display: block;
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
@@ -1463,7 +1472,7 @@ onMounted(() => {
 
 .info-value {
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -1475,7 +1484,7 @@ onMounted(() => {
 }
 
 .panel {
-  background: #1a1a1a;
+  background: var(--surface);
   border: 1px solid #2a2a2a;
   border-radius: 20px;
   padding: 28px;
@@ -1518,25 +1527,25 @@ onMounted(() => {
 .panel-header h2 {
   font-size: 22px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
 }
 
 .view-all-link {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
 }
 
 .view-all-link:hover {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .panel-header .subtitle {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
 }
 
 .search-bar {
@@ -1549,11 +1558,11 @@ onMounted(() => {
   width: 300px;
   height: 40px;
   padding: 0 14px;
-  background: #0f0f0f;          /* 🔥 흰색 제거 */
+  background: var(--bg);          /* 🔥 흰색 제거 */
   border: 2px solid #2a2a2a;
   border-radius: 10px;
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -1577,11 +1586,11 @@ onMounted(() => {
 /* 카테고리 select */
 .search-bar select {
   padding: 0 14px;
-  background: #0f0f0f;
+  background: var(--bg);
   border: 2px solid #2a2a2a;
   border-radius: 10px;
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text);
   cursor: pointer;
   transition: border-color 0.2s;
 }
@@ -1603,7 +1612,7 @@ onMounted(() => {
 }
 
 .link {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
@@ -1657,16 +1666,16 @@ onMounted(() => {
 .page-btn {
   padding: 8px 18px;
   border-radius: 999px;
-  background: #0f0f0f;
+  background: var(--bg);
   border: 1px solid #2a2a2a;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #2a2a2a;
+  background: var(--hover);
 }
 
 .page-btn:disabled {
@@ -1688,7 +1697,7 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: #0f0f0f;
+  background: var(--bg);
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   padding: 24px;
@@ -1704,20 +1713,20 @@ onMounted(() => {
 }
 
 .stat-card.highlight {
-  border-color: #ffffff;
+  border-color: var(--text);
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
 }
 
 .stat-label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* 정산 내역 */
@@ -1735,7 +1744,7 @@ onMounted(() => {
 
 .btn-dispute:hover {
   background: #ff4757;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .settlement-list {
@@ -1745,7 +1754,7 @@ onMounted(() => {
 }
 
 .settlement-item {
-  background: #0f0f0f;
+  background: var(--bg);
   border: 1px solid #2a2a2a;
   border-radius: 16px;
   padding: 24px;
@@ -1754,7 +1763,7 @@ onMounted(() => {
 
 .settlement-item:hover {
   border-color: #3a3a3a;
-  background: #151515;
+  background: var(--hover);
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
@@ -1783,7 +1792,7 @@ onMounted(() => {
 .settlement-date-label,
 .settlement-amount-label {
   font-size: 12px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1791,14 +1800,14 @@ onMounted(() => {
 
 .settlement-date {
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
 .settlement-amount {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .settlement-status-wrapper {
@@ -1845,8 +1854,8 @@ onMounted(() => {
 }
 
 .stat-box {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
@@ -1869,14 +1878,14 @@ onMounted(() => {
 
 .stat-box .stat-label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .stat-box .stat-number {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* 상품 목록 */
@@ -1890,8 +1899,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border: 1px solid #2a2a2a;
-  background: #0f0f0f;
+  border: 1px solid var(--border);
+  background: var(--bg);
   border-radius: 16px;
   padding: 16px;
   cursor: pointer;
@@ -1906,7 +1915,7 @@ onMounted(() => {
 
 .updated-date {
   font-size: 12px;
-  color: #999;
+  color: var(--muted);
   margin-top: 8px;
 }
 
@@ -1918,14 +1927,14 @@ onMounted(() => {
 
 .category {
   font-size: 12px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .product-card h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
   line-height: 1.4;
 }
@@ -1933,7 +1942,7 @@ onMounted(() => {
 .price {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .progress-info {
@@ -1944,12 +1953,12 @@ onMounted(() => {
 
 .progress-text {
   font-size: 12px;
-  color: #999;
+  color: var(--muted);
 }
 
 .progress-bar {
   height: 6px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1972,8 +1981,8 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   padding: 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
@@ -1981,7 +1990,7 @@ onMounted(() => {
 
 .group-purchase-item:hover {
   border-color: #3a3a3a;
-  background: #151515;
+  background: var(--hover);
 }
 
 .group-purchase-item img {
@@ -2001,7 +2010,7 @@ onMounted(() => {
 .item-info h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
 }
 
@@ -2009,7 +2018,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .item-price {
@@ -2021,19 +2030,19 @@ onMounted(() => {
 
 .original-price {
   font-size: 14px;
-  color: #666;
+  color: var(--muted);
   text-decoration: line-through;
 }
 
 .current-price {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .item-date {
   font-size: 12px;
-  color: #666;
+  color: var(--muted);
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
@@ -2080,8 +2089,8 @@ onMounted(() => {
 }
 
 .order-item {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.2s;
@@ -2089,7 +2098,7 @@ onMounted(() => {
 
 .order-item:hover {
   border-color: #3a3a3a;
-  background: #151515;
+  background: var(--hover);
 }
 
 .order-header {
@@ -2102,13 +2111,13 @@ onMounted(() => {
 }
 
 .order-date {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
   margin-right: 12px;
 }
 
 .order-number {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -2199,7 +2208,7 @@ onMounted(() => {
   gap: 8px;
   margin-bottom: 12px;
   padding: 12px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 8px;
 }
 
@@ -2219,7 +2228,7 @@ onMounted(() => {
 .order-quantity,
 .order-price {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   text-align: right;
 }
@@ -2229,14 +2238,14 @@ onMounted(() => {
 }
 
 .product-details h4 {
-  color: #ffffff;
+  color: var(--text);
   font-size: 15px;
   font-weight: 600;
   margin: 0 0 4px;
 }
 
 .product-option {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
   margin: 0 0 8px;
 }
@@ -2246,11 +2255,11 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .product-price {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -2266,7 +2275,7 @@ onMounted(() => {
 .order-total {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .order-actions {
@@ -2290,8 +2299,8 @@ onMounted(() => {
 }
 
 .qna-item {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
   display: flex;
@@ -2303,7 +2312,7 @@ onMounted(() => {
 
 .qna-item:hover {
   border-color: #3a3a3a;
-  background: #151515;
+  background: var(--hover);
 }
 
 .qna-content {
@@ -2315,7 +2324,7 @@ onMounted(() => {
 
 .question {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   margin: 0;
 }
@@ -2358,8 +2367,8 @@ onMounted(() => {
 }
 
 .notice-item {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
   display: flex;
@@ -2371,12 +2380,12 @@ onMounted(() => {
 
 .notice-item:hover {
   border-color: #3a3a3a;
-  background: #151515;
+  background: var(--hover);
 }
 
 .tag {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover);
+  color: var(--text);
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -2386,13 +2395,13 @@ onMounted(() => {
 
 .notice-title {
   flex: 1;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   font-weight: 500;
 }
 
 .date {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -2401,7 +2410,7 @@ onMounted(() => {
 .loading-state {
   text-align: center;
   padding: 60px 20px;
-  color: #999;
+  color: var(--muted);
   font-size: 15px;
 }
 
@@ -2423,12 +2432,12 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #666;
+  color: var(--muted);
 }
 
 .empty-state p {
   margin: 0 0 16px;
-  color: #999;
+  color: var(--muted);
 }
 
 /* 상품 목록의 빈 상태는 grid 전체 너비 차지 */
@@ -2460,12 +2469,12 @@ onMounted(() => {
 .btn-outline {
   background: transparent;
   border: 1px solid #4a4a4a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
-  background: #2a2a2a;
-  border-color: #666;
+  background: var(--hover);
+  border-color: var(--muted);
 }
 
 /* 모달 */
@@ -2484,8 +2493,8 @@ onMounted(() => {
 }
 
 .modal-content {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 32px;
   max-width: 600px;
@@ -2502,7 +2511,7 @@ onMounted(() => {
 }
 
 .modal-header h2 {
-  color: #ffffff;
+  color: var(--text);
   font-size: 24px;
   margin: 0;
 }
@@ -2510,7 +2519,7 @@ onMounted(() => {
 .close-btn {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -2524,7 +2533,7 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  background: #2a2a2a;
+  background: var(--hover);
 }
 
 .edit-form {
@@ -2548,7 +2557,7 @@ onMounted(() => {
 .form-section h3 {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0 0 8px;
 }
 
@@ -2565,7 +2574,7 @@ onMounted(() => {
 }
 
 .form-group label {
-  color: #e0e0e0;
+  color: var(--text);
   font-weight: 600;
   font-size: 14px;
 }
@@ -2574,11 +2583,11 @@ onMounted(() => {
 .form-group textarea,
 .form-group select {
   padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   font-family: inherit;
 }
@@ -2587,8 +2596,8 @@ onMounted(() => {
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--hover);
 }
 
 .form-group select {

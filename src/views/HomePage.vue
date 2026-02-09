@@ -101,12 +101,12 @@
               <div class="product-footer">
                 <span class="time-left">⏰ {{ product.timeLeft }}</span>
                 <div class="footer-actions">
-                  <button
+                  <!-- <button
                     class="btn btn-outline btn-sm"
                     @click.stop="addToCart(product)"
                   >
                     장바구니
-                  </button>
+                  </button> -->
                   <button
                     class="btn btn-primary btn-sm"
                     @click.stop="goToProduct(product.id)"
@@ -232,12 +232,12 @@
               <div class="product-footer">
                 <span class="time-left">⏰ {{ product.timeLeft }}</span>
                 <div class="footer-actions">
-                  <button
+                  <!-- <button
                     class="btn btn-outline btn-sm"
                     @click.stop="addToCart(product)"
                   >
                     장바구니
-                  </button>
+                  </button> -->
                   <button
                     class="btn btn-primary btn-sm"
                     @click.stop="goToProduct(product.id)"
@@ -656,7 +656,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .home-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
 }
 
@@ -669,7 +669,7 @@ onBeforeUnmount(() => {
 /* 히어로 섹션 */
 .hero {
   position: relative;
-  background: #1a1a1a;
+  background: var(--surface);
   padding: 80px 0 60px;
   overflow: hidden;
   border-bottom: 1px solid #2a2a2a;
@@ -711,8 +711,8 @@ onBeforeUnmount(() => {
   max-width: 600px;
   margin: 0 auto 50px;
   gap: 12px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
@@ -724,12 +724,12 @@ onBeforeUnmount(() => {
   outline: none;
   padding: 12px 16px;
   font-size: 16px;
-  color: #ffffff;
+  color: var(--text);
   background: transparent;
 }
 
 .search-input::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 .btn-search {
@@ -784,7 +784,7 @@ onBeforeUnmount(() => {
   font-size: 28px;
   font-weight: 700;
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .section-reason {
@@ -795,7 +795,7 @@ onBeforeUnmount(() => {
 }
 
 .view-all {
-  color: #ffffff;
+  color: var(--text);
   text-decoration: none;
   font-weight: 600;
   font-size: 16px;
@@ -808,7 +808,7 @@ onBeforeUnmount(() => {
 
 /* 카테고리 (가로 드래그) */
 .categories-section {
-  background: #0a0a0a;
+  background: var(--bg);
 }
 
 body.theme-light .home-page {
@@ -898,6 +898,10 @@ body.theme-light .progress-bar {
   background: #e6e6ea;
 }
 
+body.theme-light .progress-fill {
+  background: #111111;
+}
+
 body.theme-light .category-card:hover,
 body.theme-light .product-card:hover {
   border-color: #d0d0d6;
@@ -955,8 +959,8 @@ body.theme-light .btn-outline:hover {
   align-items: center;
   justify-content: center;
 
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
 
   cursor: pointer;
@@ -964,7 +968,7 @@ body.theme-light .btn-outline:hover {
 }
 
 .category-card:hover {
-  border-color: #ffffff;
+  border-color: var(--text);
   transform: translateY(-2px);
 }
 
@@ -976,7 +980,7 @@ body.theme-light .btn-outline:hover {
 .category-name {
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* 상품 그리드 */
@@ -987,8 +991,8 @@ body.theme-light .btn-outline:hover {
 }
 
 .product-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1007,7 +1011,7 @@ body.theme-light .btn-outline:hover {
   width: 100%;
   padding-top: 75%;
   overflow: hidden;
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 .product-image {
@@ -1053,7 +1057,7 @@ body.theme-light .btn-outline:hover {
 
 .product-category {
   font-size: 12px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -1062,7 +1066,7 @@ body.theme-light .btn-outline:hover {
   font-size: 18px;
   font-weight: 700;
   margin: 0 0 8px;
-  color: #ffffff;
+  color: var(--text);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1089,15 +1093,15 @@ body.theme-light .btn-outline:hover {
 
 .original-price {
   font-size: 14px;
-  color: #666;
+  color: var(--muted);
   text-decoration: line-through;
 }
 
 .discount-rate {
   font-size: 13px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
-  background: #2a2a2a;
+  background: var(--hover);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -1105,7 +1109,7 @@ body.theme-light .btn-outline:hover {
 .current-price {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .product-progress {
@@ -1120,7 +1124,7 @@ body.theme-light .btn-outline:hover {
 }
 
 .progress-text {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -1130,7 +1134,7 @@ body.theme-light .btn-outline:hover {
 
 .progress-bar {
   height: 8px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1170,12 +1174,23 @@ body.theme-light .btn-outline:hover {
 .btn-primary {
   background: #ffffff;
   color: #0a0a0a;
+  border: 1px solid var(--border);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
   background: #f0f0f0;
+  border-color: var(--text);
+}
+
+/* 라이트 모드: 참여하기 버튼 테두리 */
+:global(body.theme-light) .btn-primary {
+  border-color: #111111;
+}
+
+:global(body.theme-light) .btn-primary:hover {
+  border-color: #2a2a2a;
 }
 
 .btn-sm {
@@ -1190,7 +1205,7 @@ body.theme-light .btn-outline:hover {
 
 /* 특징 섹션 */
 .features-section {
-  background: #0a0a0a;
+  background: var(--bg);
 }
 
 .features-grid {
@@ -1214,12 +1229,12 @@ body.theme-light .btn-outline:hover {
   font-size: 20px;
   font-weight: 700;
   margin: 0 0 12px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .feature-desc {
   font-size: 15px;
-  color: #999;
+  color: var(--muted);
   line-height: 1.6;
   margin: 0;
 }

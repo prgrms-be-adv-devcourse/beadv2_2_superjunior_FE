@@ -3,8 +3,10 @@
     <div class="container">
       <div class="login-card">
         <div class="login-header">
-          <h1>로그인</h1>
-          <p>0909 공구공구에 오신 것을 환영합니다</p>
+          <div class="brand">
+            <img src="/favicon-design2.svg" alt="공구공구" class="brand-icon" />
+            <span class="brand-text">0909</span>
+          </div>
         </div>
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
@@ -185,7 +187,7 @@ const handleLogin = async () => {
 </script>
 <style scoped>
 .login-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -199,8 +201,8 @@ const handleLogin = async () => {
 }
 
 .login-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -211,16 +213,24 @@ const handleLogin = async () => {
   margin-bottom: 32px;
 }
 
-.login-header h1 {
-  font-size: 32px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 8px;
+.login-header .brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: default;
 }
 
-.login-header p {
-  color: #a0a0a0;
-  font-size: 15px;
+.login-header .brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.login-header .brand-text {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .login-form {
@@ -237,28 +247,28 @@ const handleLogin = async () => {
 
 .form-group label {
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--text);
   font-size: 14px;
 }
 
 .form-group input {
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
 }
 
 .form-group input::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--surface);
 }
 
 .form-options {
@@ -272,7 +282,7 @@ const handleLogin = async () => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #e0e0e0;
+  color: var(--text);
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -295,6 +305,7 @@ const handleLogin = async () => {
 .btn-primary {
   background: #ffffff;
   color: #0a0a0a;
+  border: 1px solid #d0d0d0;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -321,14 +332,14 @@ const handleLogin = async () => {
   left: 0;
   right: 0;
   height: 1px;
-  background: #2a2a2a;
+  background: var(--border);
 }
 
 .divider span {
   position: relative;
-  background: #1a1a1a;
+  background: var(--surface);
   padding: 0 16px;
-  color: #666;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -338,7 +349,7 @@ const handleLogin = async () => {
   justify-content: center;
   gap: 12px;
   background: #ffffff;
-  border: none;
+  border: 1px solid #d0d0d0;
   color: #0a0a0a;
   font-weight: 600;
   transition: all 0.2s;
@@ -358,11 +369,11 @@ const handleLogin = async () => {
   text-align: center;
   margin-top: 8px;
   font-size: 14px;
-  color: #a0a0a0;
+  color: var(--muted);
 }
 
 .signup-link a {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   text-decoration: none;
   margin-left: 4px;
@@ -380,6 +391,17 @@ const handleLogin = async () => {
   color: #ff6666;
   font-size: 14px;
   text-align: center;
+}
+
+/* 라이트 모드: 연한 그림자 */
+:global(body.theme-light) .login-card {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+:global(body.theme-light) .error-message {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
 }
 
 @media (max-width: 480px) {

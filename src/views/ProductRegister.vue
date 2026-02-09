@@ -131,13 +131,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import api, { productApi } from '@/api/axios'
 import { generateUUID } from '@/utils/uuid'
 
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   title: '',
@@ -168,9 +169,39 @@ const isFormValid = computed(() => {
   )
 })
 
+const getReturnPath = () => {
+  const from = route.query.from
+  if (typeof from !== 'string') return null
+  const rawPath = decodeURIComponent(from)
+  if (rawPath.startsWith('/')) {
+    return rawPath
+  }
+  return null
+}
+
+const goBackOrFallback = () => {
+  const returnPath = getReturnPath()
+  if (returnPath) {
+    router.push(returnPath)
+    return
+  }
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
+  router.push('/seller')
+}
+
+const handlePopState = () => {
+  const returnPath = getReturnPath()
+  if (returnPath) {
+    router.replace(returnPath)
+  }
+}
+
 const handleCancel = () => {
   if (confirm('작성 중인 내용이 사라집니다. 정말 취소하시겠습니까?')) {
-    router.push('/seller')
+    goBackOrFallback()
   }
 }
 
@@ -324,6 +355,7 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  window.addEventListener('popstate', handlePopState)
   // 로그인 체크
   const memberId = localStorage.getItem('member_id')
   if (!memberId) {
@@ -338,6 +370,10 @@ onMounted(() => {
     alert('판매자만 상품을 등록할 수 있습니다.')
     router.push('/seller/application')
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', handlePopState)
 })
 </script>
 
@@ -589,6 +625,162 @@ onMounted(() => {
   .btn {
     width: 100%;
   }
+}
+
+/* 라이트 모드 스타일 */
+:global(body.theme-light) .register-page {
+  background: #ffffff !important;
+}
+
+:global(body.theme-light) .page-header h1 {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .page-header p {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .form-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .form-section h3 {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .form-group label {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .form-group input,
+:global(body.theme-light) .form-group select,
+:global(body.theme-light) .form-group textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .form-group input:focus,
+:global(body.theme-light) .form-group select:focus,
+:global(body.theme-light) .form-group textarea:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+:global(body.theme-light) .form-group input::placeholder,
+:global(body.theme-light) .form-group textarea::placeholder {
+  color: #999999 !important;
+}
+
+:global(body.theme-light) .form-hint {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .image-preview img {
+  border-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .upload-status {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(body.theme-light) .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+:global(body.theme-light) .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
+}
+
+/* 라이트 모드 강제 적용 */
+body.theme-light .register-page {
+  background: #ffffff !important;
+}
+
+body.theme-light .page-header h1 {
+  color: #0f172a !important;
+}
+
+body.theme-light .page-header p {
+  color: #666666 !important;
+}
+
+body.theme-light .form-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .form-section h3 {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group label {
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input,
+body.theme-light .form-group select,
+body.theme-light .form-group textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .form-group input:focus,
+body.theme-light .form-group select:focus,
+body.theme-light .form-group textarea:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .form-group input::placeholder,
+body.theme-light .form-group textarea::placeholder {
+  color: #999999 !important;
+}
+
+body.theme-light .form-hint {
+  color: #666666 !important;
+}
+
+body.theme-light .image-preview img {
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .upload-status {
+  color: #666666 !important;
+}
+
+body.theme-light .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+body.theme-light .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
 }
 </style>
 

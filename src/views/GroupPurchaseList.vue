@@ -472,7 +472,10 @@ const goToDetail = (id) => {
 }
 
 const goToCreate = () => {
-  router.push({ name: 'group-purchase-create' })
+  router.push({
+    name: 'group-purchase-create',
+    query: { from: route.fullPath }
+  })
 }
 
 const handleEdit = (id) => {
@@ -574,7 +577,7 @@ watch(filteredGroupPurchases, () => {
 
 <style scoped>
 .group-purchase-list-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -596,7 +599,7 @@ watch(filteredGroupPurchases, () => {
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
@@ -631,9 +634,9 @@ watch(filteredGroupPurchases, () => {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   background: #111111;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .search-control {
@@ -688,8 +691,8 @@ watch(filteredGroupPurchases, () => {
 }
 
 .product-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   overflow: hidden;
   display: flex;
@@ -737,16 +740,16 @@ watch(filteredGroupPurchases, () => {
 .card-body h2 {
   margin: 0;
   font-size: 20px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .card-body .subtitle {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .category {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 13px;
 }
@@ -760,24 +763,24 @@ watch(filteredGroupPurchases, () => {
 .current-price {
   font-size: 22px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .meta {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .original {
   text-decoration: line-through;
-  color: #666;
+  color: var(--muted);
 }
 
 .progress-head {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .progress {
@@ -788,7 +791,7 @@ watch(filteredGroupPurchases, () => {
 
 .progress-bar {
   height: 8px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -807,7 +810,7 @@ watch(filteredGroupPurchases, () => {
 
 .time {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .footer-actions {
@@ -880,7 +883,7 @@ watch(filteredGroupPurchases, () => {
   border-radius: 16px;
   overflow: hidden;
   flex-shrink: 0;
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 .gp-image img {
@@ -909,7 +912,7 @@ watch(filteredGroupPurchases, () => {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   line-height: 1.4;
   word-break: break-word;
 }
@@ -930,7 +933,7 @@ watch(filteredGroupPurchases, () => {
 .gp-price-row .price {
   font-size: 22px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .gp-price-row .original-price {
@@ -988,7 +991,7 @@ watch(filteredGroupPurchases, () => {
   transition: all 0.2s ease;
   border: 1px solid transparent;
   background: transparent;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-primary {
@@ -1030,9 +1033,9 @@ watch(filteredGroupPurchases, () => {
 .page-btn {
   padding: 10px 18px;
   border-radius: 999px;
-  border: 1px solid #2a2a2a;
-  background: #1a1a1a;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1041,7 +1044,7 @@ watch(filteredGroupPurchases, () => {
 .page-btn:hover:not(:disabled) {
   background: #ffffff;
   color: #0a0a0a;
-  border-color: #ffffff;
+  border-color: var(--text);
 }
 
 .page-btn:disabled {
@@ -1053,7 +1056,7 @@ watch(filteredGroupPurchases, () => {
   min-width: 80px;
   text-align: center;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
 }
 
 @media (max-width: 768px) {
@@ -1079,5 +1082,133 @@ watch(filteredGroupPurchases, () => {
     flex-direction: column;
     gap: 6px;
   }
+}
+
+/* 라이트 모드 스타일 */
+body.theme-light .group-purchase-list-page {
+  background: #ffffff !important;
+}
+
+body.theme-light .page-header h1 {
+  color: #0f172a !important;
+}
+
+body.theme-light .page-header p {
+  color: #666666 !important;
+}
+
+body.theme-light .filter-group label {
+  color: #0f172a !important;
+}
+
+body.theme-light .filter-group select,
+body.theme-light .search-control input {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .filter-group select:focus,
+body.theme-light .search-control input:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+body.theme-light .search-control input::placeholder {
+  color: #999999 !important;
+}
+
+body.theme-light .btn-text {
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .btn-outline:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+body.theme-light .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+}
+
+body.theme-light .loading-state,
+body.theme-light .empty-state {
+  color: #666666 !important;
+}
+
+body.theme-light .empty-state {
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .product-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .product-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.theme-light .card-body h2 {
+  color: #0f172a !important;
+}
+
+body.theme-light .card-body .subtitle {
+  color: #666666 !important;
+}
+
+body.theme-light .category {
+  color: #0f172a !important;
+}
+
+body.theme-light .current-price {
+  color: #0f172a !important;
+}
+
+body.theme-light .meta,
+body.theme-light .original {
+  color: #999999 !important;
+}
+
+body.theme-light .progress-head {
+  color: #0f172a !important;
+}
+
+body.theme-light .progress-bar {
+  background: #f1f5f9 !important;
+}
+
+body.theme-light .progress-fill {
+  background: #0f172a !important;
+}
+
+body.theme-light .time {
+  color: #666666 !important;
+}
+
+body.theme-light .page-btn {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-light .page-btn:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.theme-light .page-info {
+  color: #0f172a !important;
 }
 </style>
